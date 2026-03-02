@@ -96,6 +96,8 @@ export interface AutoBuildProgressEvent {
   previewCandidates?: AutoBuildCandidate[];
   /** Near-miss candidates that almost passed all checks. Emitted with phase='diagnostics'. */
   nearMissCandidates?: AutoBuildCandidate[];
+  /** Looser rejected candidates (further from constraints) offered as opt-in suggestions. */
+  looserCandidates?: AutoBuildCandidate[];
 }
 
 export const DEFAULT_AUTO_BUILDER_WEIGHTS: AutoBuilderWeights = {

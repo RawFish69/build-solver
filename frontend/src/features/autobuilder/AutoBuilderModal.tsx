@@ -150,37 +150,45 @@ function formatNumericIdLabel(key: string): string {
   return NUMERIC_ID_FULL_NAMES[key] ?? key;
 }
 
-const ZERO_WEIGHTS: AutoBuildConstraints['weights'] = {
-  legacyBaseDps: 0, legacyEhp: 0, dpsProxy: 0, spellProxy: 0, meleeProxy: 0,
-  ehpProxy: 0, speed: 0, sustain: 0, skillPointTotal: 0, reqTotalPenalty: 0,
+const BASELINE_WEIGHTS: AutoBuildConstraints['weights'] = {
+  legacyBaseDps: 0.08,
+  legacyEhp: 0.12,
+  dpsProxy: 0.08,
+  spellProxy: 0,
+  meleeProxy: 0,
+  ehpProxy: 0.10,
+  speed: 0.06,
+  sustain: 0.08,
+  skillPointTotal: 0.04,
+  reqTotalPenalty: 0.10,
 };
 
 function presetWeightDelta(preset: OptimizationPreset): AutoBuildConstraints['weights'] {
   switch (preset) {
     case 'spell':
-      return { ...ZERO_WEIGHTS, spellProxy: 2.0 };
+      return { ...BASELINE_WEIGHTS, spellProxy: 2.0, dpsProxy: 0.3 };
     case 'melee':
-      return { ...ZERO_WEIGHTS, meleeProxy: 2.0 };
+      return { ...BASELINE_WEIGHTS, meleeProxy: 2.0, dpsProxy: 0.3 };
     case 'mobility':
-      return { ...ZERO_WEIGHTS, speed: 2.0 };
+      return { ...BASELINE_WEIGHTS, speed: 2.0, sustain: 0.2 };
     case 'tank':
-      return { ...ZERO_WEIGHTS, legacyEhp: 2.0 };
+      return { ...BASELINE_WEIGHTS, legacyEhp: 2.0, ehpProxy: 0.5, sustain: 0.3 };
     case 'constraints':
       return {
-        ...ZERO_WEIGHTS,
-        legacyBaseDps: 0.25,
-        legacyEhp: 0.25,
-        dpsProxy: 0.25,
-        spellProxy: 0.25,
-        meleeProxy: 0.25,
-        ehpProxy: 0.25,
-        speed: 0.25,
-        sustain: 0.25,
-        skillPointTotal: 0.25,
-        reqTotalPenalty: 0.25,
+        ...BASELINE_WEIGHTS,
+        legacyBaseDps: 0.15,
+        legacyEhp: 0.15,
+        dpsProxy: 0.15,
+        spellProxy: 0.15,
+        meleeProxy: 0.15,
+        ehpProxy: 0.15,
+        speed: 0.15,
+        sustain: 0.15,
+        skillPointTotal: 0.15,
+        reqTotalPenalty: 0.15,
       };
     default:
-      return { ...ZERO_WEIGHTS, spellProxy: 2.0 };
+      return { ...BASELINE_WEIGHTS, spellProxy: 2.0, dpsProxy: 0.3 };
   }
 }
 
@@ -235,6 +243,7 @@ export function AutoBuilderModal(props: {
   const [progressEvent, setProgressEvent] = useState<AutoBuildProgressEvent | null>(null);
   const [previewCandidates, setPreviewCandidates] = useState<AutoBuildCandidate[]>([]);
   const [nearMissCandidates, setNearMissCandidates] = useState<AutoBuildCandidate[]>([]);
+  const [looserCandidates, setLooserCandidates] = useState<AutoBuildCandidate[]>([]);
   const [lastRejectStats, setLastRejectStats] = useState<ReturnType<typeof parseRejectStatsFromDetail>>(null);
   const [retryAvailable, setRetryAvailable] = useState(false);
   const lastConstraintsRef = useRef<AutoBuildConstraints | null>(null);
@@ -429,6 +438,18 @@ export function AutoBuilderModal(props: {
               }).slice(0, 10);
             });
           }
+          if (event.looserCandidates) {
+            setLooserCandidates((prev) => {
+              const merged = [...prev, ...event.looserCandidates!];
+              const seen = new Set<string>();
+              return merged.filter((c) => {
+                const key = ITEM_SLOTS.map((s) => c.slots[s] ?? '').join(',');
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              }).slice(0, 10);
+            });
+          }
           if (event.phase === 'diagnostics' && event.reasonCode) {
             reasonCodeRef.current = event.reasonCode;
             setLastReasonCode(event.reasonCode);
@@ -475,6 +496,18 @@ export function AutoBuilderModal(props: {
             if (event.nearMissCandidates) {
               setNearMissCandidates((prev) => {
                 const merged = [...prev, ...event.nearMissCandidates!];
+                const seen = new Set<string>();
+                return merged.filter((c) => {
+                  const key = ITEM_SLOTS.map((s) => c.slots[s] ?? '').join(',');
+                  if (seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                }).slice(0, 10);
+              });
+            }
+            if (event.looserCandidates) {
+              setLooserCandidates((prev) => {
+                const merged = [...prev, ...event.looserCandidates!];
                 const seen = new Set<string>();
                 return merged.filter((c) => {
                   const key = ITEM_SLOTS.map((s) => c.slots[s] ?? '').join(',');
@@ -601,6 +634,7 @@ export function AutoBuilderModal(props: {
     setRunning(true);
     setPreviewCandidates([]);
     setNearMissCandidates([]);
+    setLooserCandidates([]);
     setRetryAvailable(false);
     setLastRejectStats(null);
     lastConstraintsRef.current = constraints;
@@ -754,6 +788,7 @@ export function AutoBuilderModal(props: {
     setRunning(true);
     setPreviewCandidates([]);
     setNearMissCandidates([]);
+    setLooserCandidates([]);
     const label = tier === 'exhaustive' ? 'Exhaustive retry' : 'Deep retry';
     setProgress(`${label} • topK ${deeperConstraints.topKPerSlot}, beam ${deeperConstraints.beamWidth}`);
 
@@ -1404,6 +1439,7 @@ export function AutoBuilderModal(props: {
               const isPreview = running && previewCandidates.length > 0;
               const shownCandidates = (isPreview ? previewCandidates.slice(0, 2) : results);
               const showNearMisses = !running && results.length === 0 && nearMissCandidates.length > 0;
+              const showLoosers = !running && results.length === 0 && looserCandidates.length > 0;
               return (
                 <>
                   <div className="mb-3 flex items-center justify-between">
@@ -1416,6 +1452,7 @@ export function AutoBuilderModal(props: {
                     <div className="text-xs text-[var(--wb-muted)]">
                       {shownCandidates.length} shown
                       {showNearMisses ? ` + ${nearMissCandidates.length} near-miss` : ''}
+                      {showLoosers ? ` + ${looserCandidates.length} loose` : ''}
                     </div>
                   </div>
 
@@ -1437,7 +1474,7 @@ export function AutoBuilderModal(props: {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-sm font-semibold">
-                              #{index + 1} | Score {Math.round(candidate.score).toLocaleString()}
+                              #{index + 1} | Score {Math.max(0, Math.round(candidate.score)).toLocaleString()}
                             </div>
                             <div className="mt-1 text-xs text-[var(--wb-muted)]">
                               HP {Math.round(candidate.summary.aggregated.hpTotal)} | Req {candidate.summary.derived.reqTotal}
@@ -1490,7 +1527,7 @@ export function AutoBuilderModal(props: {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <div className="text-sm font-semibold text-amber-200">
-                                  Near-miss #{index + 1} | Score {Math.round(candidate.score).toLocaleString()}
+                                  Near-miss #{index + 1} | Score {Math.max(0, Math.round(candidate.score)).toLocaleString()}
                                 </div>
                                 <div className="mt-1 text-xs text-amber-100/70">
                                   HP {Math.round(candidate.summary.aggregated.hpTotal)} | Req {candidate.summary.derived.reqTotal}
@@ -1530,6 +1567,78 @@ export function AutoBuilderModal(props: {
                             </div>
                           </div>
                         ))}
+                      </>
+                    ) : null}
+
+                    {showLoosers ? (
+                      <>
+                        <div className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/5 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <div className="text-sm font-semibold text-amber-200">
+                                Also found {looserCandidates.length} more build{looserCandidates.length > 1 ? 's' : ''} that break constraints
+                              </div>
+                              <div className="mt-1 text-xs text-amber-100/80">
+                                These are farther from your targets (SP or thresholds) but might still be interesting. Expand below to inspect them manually.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <details className="rounded-xl border border-amber-400/30 bg-amber-900/10 p-3">
+                          <summary className="cursor-pointer list-none text-xs font-semibold text-amber-200">
+                            Show looser candidates (advanced)
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            {looserCandidates.map((candidate, index) => (
+                              <div
+                                key={`loose-${candidate.score}-${index}`}
+                                className="rounded-xl border border-amber-400/30 bg-amber-900/30 p-3"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="text-sm font-semibold text-amber-200">
+                                      Loose #{index + 1} | Score {Math.max(0, Math.round(candidate.score)).toLocaleString()}
+                                    </div>
+                                    <div className="mt-1 text-xs text-amber-100/70">
+                                      HP {Math.round(candidate.summary.aggregated.hpTotal)} | Req {candidate.summary.derived.reqTotal}
+                                    </div>
+                                    <div className="mt-1 text-xs text-amber-100/70">
+                                      SP Needed {Math.round(candidate.summary.derived.assignedSkillPointsRequired)} | MR {candidate.summary.aggregated.mr} | MS {candidate.summary.aggregated.ms}
+                                    </div>
+                                    {candidate.nearMissReasons?.length ? (
+                                      <div className="mt-2 space-y-0.5">
+                                        {candidate.nearMissReasons.map((reason, ri) => (
+                                          <div key={ri} className="text-[11px] text-amber-300/90">
+                                            {reason}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    className="border border-amber-400/30 px-2 py-1 text-xs text-amber-200 hover:bg-amber-400/10"
+                                    onClick={() => props.onLoadCandidate(candidate)}
+                                  >
+                                    Load anyway
+                                  </Button>
+                                </div>
+                                <div className="mt-2 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2 xl:grid-cols-3">
+                                  {ITEM_SLOTS.map((slot) => (
+                                    <div key={slot} className="min-w-0 rounded-md border border-amber-400/20 bg-black/10 px-2 py-1">
+                                      <div className="text-[10px] uppercase tracking-wide text-amber-200/60">{slot}</div>
+                                      <div className="truncate text-amber-100/80">
+                                        {candidate.slots[slot] != null
+                                          ? props.catalog?.itemsById.get(candidate.slots[slot]!)?.displayName ?? candidate.slots[slot]
+                                          : 'Empty'}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
                       </>
                     ) : null}
                   </div>

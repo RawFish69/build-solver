@@ -522,7 +522,9 @@ const CUSTOM_RANGE_MIN_WEIGHT_STRONG = 14;
 function roughItemScore(item: NormalizedItem, constraints: AutoBuildConstraints): number {
   const customRanges = constraints.target.customNumericRanges ?? [];
 
-  // Pure constraint-satisfaction: only score by how much items contribute to custom ranges.
+  // Pure constraint-satisfaction: score by custom range contributions but also give
+  // a small positive baseline for SP-support items (low requirements, SP bonuses)
+  // so they aren't obliterated if they have slightly negative custom range values.
   if (constraints.constraintOnlyMode) {
     let score = 0;
     for (const range of customRanges) {
@@ -533,6 +535,11 @@ function roughItemScore(item: NormalizedItem, constraints: AutoBuildConstraints)
       if (typeof range.max === 'number') score -= v * CUSTOM_RANGE_MAX_WEIGHT;
     }
     score -= item.roughScoreFields.reqTotal * 0.05;
+    // Baseline: items with low requirements and positive SP bonuses get a small
+    // floor so they're not pruned just because they lack the target stat.
+    const spBonus = Math.max(0, item.roughScoreFields.skillPointTotal) * 0.3;
+    const ehpBonus = Math.max(0, item.roughScoreFields.ehpProxy) * 0.02;
+    score += spBonus + ehpBonus;
     return score;
   }
 
@@ -1309,6 +1316,7 @@ function finalizeBeamCandidates(params: {
 }): {
   candidates: AutoBuildCandidate[];
   nearMissCandidates: AutoBuildCandidate[];
+  looserCandidates: AutoBuildCandidate[];
   rejectStats: {
     majorIds: number;
     spInvalid: number;
@@ -1325,8 +1333,10 @@ function finalizeBeamCandidates(params: {
   const resolvedSpOpts = skillpointFeasibilityOptions ?? skillpointFeasibilityOptionsFromMode(constraints);
   const candidates: AutoBuildCandidate[] = [];
   const nearMissCandidates: AutoBuildCandidate[] = [];
+  const looserCandidates: AutoBuildCandidate[] = [];
   const seenCandidateKeys = new Set<string>();
   const seenNearMissKeys = new Set<string>();
+  const seenLooserKeys = new Set<string>();
   const rejectStats = {
     majorIds: 0,
     spInvalid: 0,
@@ -1346,6 +1356,7 @@ function finalizeBeamCandidates(params: {
       : null;
 
   const NEAR_MISS_LIMIT = 10;
+  const LOOSER_LIMIT = 10;
 
   for (const node of beam) {
     if (signal?.aborted) throw new DOMException('Auto build cancelled', 'AbortError');
@@ -1384,7 +1395,7 @@ function finalizeBeamCandidates(params: {
             if (!hardCheck.ok && hardCheck.failedChecks?.length) {
               for (const fc of hardCheck.failedChecks) reasons.push(fc);
             }
-            const { score, breakdown } = scoreSummary(relaxedSummary, constraints.weights, constraints);
+            const { score, breakdown } = scoreSummary(relaxedSummary, constraints.weights, constraints, { skipThresholdPenalty: true });
             nearMissCandidates.push({
               slots: cloneSlots(node.slots),
               score,
@@ -1393,6 +1404,28 @@ function finalizeBeamCandidates(params: {
               nearMissReasons: reasons,
             });
           }
+        }
+      }
+
+      // Looser candidate: SP-infeasible even after tomes; keep top few by score as
+      // "closest rejects" so users can opt-in to inspect them.
+      if (collectNearMisses && looserCandidates.length < LOOSER_LIMIT) {
+        const key = canonicalCandidateKey(node.slots);
+        if (!seenLooserKeys.has(key)) {
+          seenLooserKeys.add(key);
+          const { score, breakdown } = scoreSummary(summary, constraints.weights, constraints, {
+            skipThresholdPenalty: true,
+          });
+          const reasons: string[] = [
+            'Fails skill-point / equip-order feasibility in current SP mode (even with best ordering).',
+          ];
+          looserCandidates.push({
+            slots: cloneSlots(node.slots),
+            score,
+            scoreBreakdown: breakdown,
+            summary,
+            nearMissReasons: reasons,
+          });
         }
       }
       continue;
@@ -1412,7 +1445,7 @@ function finalizeBeamCandidates(params: {
           const key = canonicalCandidateKey(node.slots);
           if (!seenNearMissKeys.has(key)) {
             seenNearMissKeys.add(key);
-            const { score, breakdown } = scoreSummary(summary, constraints.weights, constraints);
+            const { score, breakdown } = scoreSummary(summary, constraints.weights, constraints, { skipThresholdPenalty: true });
             nearMissCandidates.push({
               slots: cloneSlots(node.slots),
               score,
@@ -1422,7 +1455,36 @@ function finalizeBeamCandidates(params: {
             });
           }
         }
-      } else rejectStats.hardItem++;
+      } else {
+        rejectStats.hardItem++;
+      }
+
+      // Looser candidate for any hard-constraint failure: these builds are further
+      // from the requested constraints but can still be useful suggestions.
+      if (collectNearMisses && looserCandidates.length < LOOSER_LIMIT) {
+        const key = canonicalCandidateKey(node.slots);
+        if (!seenLooserKeys.has(key)) {
+          seenLooserKeys.add(key);
+          const { score, breakdown } = scoreSummary(summary, constraints.weights, constraints, {
+            skipThresholdPenalty: true,
+          });
+          const reasons: string[] = [];
+          if (hardCheck.reason === 'attackSpeed') {
+            reasons.push('Fails final attack-speed target under current constraints.');
+          } else if (hardCheck.reason === 'thresholds' && hardCheck.failedChecks?.length) {
+            for (const fc of hardCheck.failedChecks) reasons.push(`Threshold miss: ${fc}`);
+          } else {
+            reasons.push('Fails final item-level hard constraints (illegal combo, level/tier restrictions, or set rules).');
+          }
+          looserCandidates.push({
+            slots: cloneSlots(node.slots),
+            score,
+            scoreBreakdown: breakdown,
+            summary,
+            nearMissReasons: reasons,
+          });
+        }
+      }
       continue;
     }
     const key = canonicalCandidateKey(node.slots);
@@ -1452,7 +1514,9 @@ function finalizeBeamCandidates(params: {
 
   nearMissCandidates.sort((a, b) => b.score - a.score);
 
-  return { candidates, nearMissCandidates, rejectStats };
+  looserCandidates.sort((a, b) => b.score - a.score);
+
+  return { candidates, nearMissCandidates, looserCandidates, rejectStats };
 }
 
 function runFeasibilityBiasedBeamSearch(params: {
@@ -2300,7 +2364,7 @@ export function runAutoBuildBeamSearch(params: {
   }
 
   let finalizationBeam = beam;
-  let { candidates, nearMissCandidates, rejectStats } = finalizeBeamCandidates({
+  let { candidates, nearMissCandidates, looserCandidates, rejectStats } = finalizeBeamCandidates({
     beam,
     catalog,
     constraints,
@@ -2399,6 +2463,7 @@ export function runAutoBuildBeamSearch(params: {
       });
       candidates = finalized.candidates;
       nearMissCandidates = [...nearMissCandidates, ...finalized.nearMissCandidates];
+      looserCandidates = [...looserCandidates, ...finalized.looserCandidates];
       rejectStats = finalized.rejectStats;
       const feasibilityThresholdExample = rejectStats.thresholdFailureExample ? ` Example failure: ${rejectStats.thresholdFailureExample}.` : '';
       onProgress?.({
@@ -2542,15 +2607,33 @@ export function runAutoBuildBeamSearch(params: {
   dedupedNearMisses.sort((a, b) => b.score - a.score);
   const topNearMisses = dedupedNearMisses.slice(0, 10);
 
-  if (candidates.length === 0 && topNearMisses.length > 0) {
+  // Deduplicate and limit looser candidates
+  const dedupedLoosers: AutoBuildCandidate[] = [];
+  const seenLooserKeysGlobal = new Set<string>();
+  for (const lc of looserCandidates) {
+    const key = canonicalCandidateKey(lc.slots);
+    if (seenLooserKeysGlobal.has(key)) continue;
+    // Don't include loosers that ended up as exact candidates or near-misses
+    const isExactCandidate = candidates.some((c) => canonicalCandidateKey(c.slots) === key);
+    if (isExactCandidate) continue;
+    const isNearMiss = dedupedNearMisses.some((nm) => canonicalCandidateKey(nm.slots) === key);
+    if (isNearMiss) continue;
+    seenLooserKeysGlobal.add(key);
+    dedupedLoosers.push(lc);
+  }
+  dedupedLoosers.sort((a, b) => b.score - a.score);
+  const topLoosers = dedupedLoosers.slice(0, 10);
+
+  if (candidates.length === 0 && (topNearMisses.length > 0 || topLoosers.length > 0)) {
     onProgress?.({
       phase: 'near_misses',
       processedStates,
       beamSize: finalizationBeam.length,
       totalSlots: slotOrder.length,
       expandedSlots: slotOrder.length,
-      detail: `Found ${topNearMisses.length} near-miss build(s) that almost passed all checks.`,
+      detail: `Found ${topNearMisses.length} near-miss and ${topLoosers.length} additional close build(s) that broke one or more constraints.`,
       nearMissCandidates: topNearMisses,
+      looserCandidates: topLoosers,
     });
   }
 

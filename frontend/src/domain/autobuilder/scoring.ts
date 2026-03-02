@@ -85,7 +85,17 @@ export function computeCustomRangeScore(summary: BuildSummary, constraints: Auto
   return score;
 }
 
-export function scoreSummary(summary: BuildSummary, weights: AutoBuilderWeights, constraints: AutoBuildConstraints): { score: number; breakdown: AutoBuildScoreBreakdown } {
+export interface ScoreSummaryOptions {
+  /** When true, threshold penalty is skipped (useful for near-miss candidates). */
+  skipThresholdPenalty?: boolean;
+}
+
+export function scoreSummary(
+  summary: BuildSummary,
+  weights: AutoBuilderWeights,
+  constraints: AutoBuildConstraints,
+  options?: ScoreSummaryOptions,
+): { score: number; breakdown: AutoBuildScoreBreakdown } {
   const customRangeScore = computeCustomRangeScore(summary, constraints);
 
   if (constraints.constraintOnlyMode) {
@@ -108,7 +118,9 @@ export function scoreSummary(summary: BuildSummary, weights: AutoBuilderWeights,
 
   const sustain = computeSustain(summary);
   const reqPenalty = summary.derived.reqTotal * weights.reqTotalPenalty;
-  const thresholdPenalty = computeThresholdPenalty(summary, constraints);
+  const thresholdPenalty = options?.skipThresholdPenalty
+    ? 0
+    : computeThresholdPenalty(summary, constraints);
 
   const customMinCount = (constraints.target.customNumericRanges ?? []).filter(
     (r) => typeof r.min === 'number',
