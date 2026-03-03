@@ -105,6 +105,7 @@ interface CandidatePoolEntry {
   utility: number;
   level: number;
   atkTier: number;
+  attackSpeedPriority: number;
   spStr: number;
   spDex: number;
   spInt: number;
@@ -387,6 +388,50 @@ function attackSpeedBiasValue(
 
   const safetyProgress = ctx.preferredDirection > 0 ? low : -high;
   return (-worstDistance * 1_000 - bestDistance * 100 + safetyProgress) * amplifier;
+}
+
+function distanceToAllowedAttackSpeedIndex(
+  ctx: AttackSpeedReachabilityContext,
+  finalIndex: number,
+): number {
+  let bestDistance = Infinity;
+  for (const allowedIndex of ctx.allowedFinalIndices) {
+    const distance = Math.abs(allowedIndex - finalIndex);
+    if (distance < bestDistance) bestDistance = distance;
+  }
+  return Number.isFinite(bestDistance) ? bestDistance : 0;
+}
+
+function attackSpeedCandidatePriority(
+  ctx: AttackSpeedReachabilityContext | null,
+  atkTier: number,
+): number {
+  if (!ctx || !ctx.preferredDirection) return 0;
+
+  const currentFinalIndex = Math.max(
+    0,
+    Math.min(WEAPON_ATTACK_SPEED_ORDER.length - 1, ctx.baseSpeedIndex + ctx.fixedAtkTierTotal),
+  );
+  const nextFinalIndex = Math.max(
+    0,
+    Math.min(WEAPON_ATTACK_SPEED_ORDER.length - 1, ctx.baseSpeedIndex + ctx.fixedAtkTierTotal + atkTier),
+  );
+  const currentDistance = distanceToAllowedAttackSpeedIndex(ctx, currentFinalIndex);
+  const nextDistance = distanceToAllowedAttackSpeedIndex(ctx, nextFinalIndex);
+  const progress = currentDistance - nextDistance;
+  const preferredGap = ctx.allowedFinalIndices.reduce((best, idx) =>
+    Math.abs(idx - currentFinalIndex) < Math.abs(best - currentFinalIndex) ? idx : best,
+  ctx.allowedFinalIndices[0]) - currentFinalIndex;
+  const wrongDirectionPenalty =
+    ctx.preferredDirection > 0
+      ? Math.max(0, -atkTier)
+      : Math.max(0, atkTier);
+  const overshootPenalty =
+    nextDistance === 0
+      ? Math.max(0, Math.abs(atkTier) - Math.max(1, Math.abs(preferredGap)))
+      : 0;
+
+  return progress * 10_000 - nextDistance * 1_000 - wrongDirectionPenalty * 500 - overshootPenalty * 50;
 }
 
 function summarySatisfiesTargetThresholds(
@@ -1071,6 +1116,7 @@ function buildCandidatePoolForSlot(
   slot: ItemSlot,
   catalog: CatalogSnapshot,
   constraints: AutoBuildConstraints,
+  attackSpeedCtx?: AttackSpeedReachabilityContext | null,
   allowedPinnedIdsForSlot?: Set<number> | null,
   focusStats: SkillStatKey[] = [],
 ): Array<{ id: number; rough: number }> {
@@ -1088,6 +1134,7 @@ function buildCandidatePoolForSlot(
       utility: item.roughScoreFields.utility + item.numeric.spd * 0.8,
       level: item.level,
       atkTier: normalizedAtkTier(item),
+      attackSpeedPriority: attackSpeedCandidatePriority(attackSpeedCtx ?? null, normalizedAtkTier(item)),
       spStr: item.numeric.spStr,
       spDex: item.numeric.spDex,
       spInt: item.numeric.spInt,
@@ -1119,9 +1166,7 @@ function buildCandidatePoolForSlot(
   const attackSpeedSupportSorted =
     constraints.weaponAttackSpeeds.length > 0
       ? [...all].sort((a, b) => {
-          const aPos = Math.max(0, a.atkTier);
-          const bPos = Math.max(0, b.atkTier);
-          if (aPos !== bPos) return bPos - aPos;
+          if (a.attackSpeedPriority !== b.attackSpeedPriority) return b.attackSpeedPriority - a.attackSpeedPriority;
           if (a.atkTier !== b.atkTier) return b.atkTier - a.atkTier;
           if (a.reqTotal !== b.reqTotal) return a.reqTotal - b.reqTotal;
           if (a.skillPointTotal !== b.skillPointTotal) return b.skillPointTotal - a.skillPointTotal;
@@ -1193,19 +1238,36 @@ function buildCandidatePoolForSlot(
       Math.min(80, customRangeSpecs.length * 14),
   );
   const picks = new Map<number, { id: number; rough: number }>();
+  const seedAttackSpeed =
+    attackSpeedCtx?.preferredDirection && attackSpeedSupportSorted.length > 0
+      ? Math.min(8, Math.max(1, Math.floor(target * 0.25)), attackSpeedSupportSorted.length)
+      : 0;
+  for (let i = 0; i < seedAttackSpeed; i++) {
+    const item = attackSpeedSupportSorted[i];
+    picks.set(item.id, { id: item.id, rough: item.rough });
+  }
   const seedRough = Math.min(12, Math.floor(target * 0.4), roughSorted.length);
   for (let i = 0; i < seedRough; i++) {
     const item = roughSorted[i];
-    picks.set(item.id, { id: item.id, rough: item.rough });
+    if (!picks.has(item.id)) {
+      picks.set(item.id, { id: item.id, rough: item.rough });
+    }
   }
 
   const sources: Array<{ list: CandidatePoolEntry[]; remaining: number; cursor: number }> = [
+    ...(attackSpeedCtx?.preferredDirection && attackSpeedSupportSorted.length > 0
+      ? [{
+          list: attackSpeedSupportSorted,
+          remaining: Math.max(35, Math.floor(diversityBudget * 0.3)),
+          cursor: 0,
+        }]
+      : []),
     { list: roughSorted, remaining: Math.max(0, target - seedRough), cursor: 0 },
     { list: lowReqSorted, remaining: Math.floor(diversityBudget * 0.28), cursor: 0 },
     { list: spSupportSorted, remaining: Math.floor(diversityBudget * 0.24), cursor: 0 },
     { list: utilitySorted, remaining: Math.floor(diversityBudget * 0.18), cursor: 0 },
   ];
-  if (attackSpeedSupportSorted.length > 0) {
+  if (attackSpeedSupportSorted.length > 0 && !attackSpeedCtx?.preferredDirection) {
     sources.push({
       list: attackSpeedSupportSorted,
       remaining: Math.max(18, Math.floor(diversityBudget * 0.22)),
@@ -1699,7 +1761,6 @@ function runFeasibilityBiasedBeamSearch(params: {
     onProgress,
     signal,
   } = params;
-  const skillpointFeasibilityOptions = skillpointFeasibilityOptionsFromMode(constraints);
   const suffixMax = optimisticSuffixMax(slotOrder, candidatePools);
   const atkTierBounds =
     attackSpeedCtx || atkTierRequirement.hasConstraint
@@ -1878,14 +1939,14 @@ function runFeasibilityBiasedBeamSearch(params: {
       return 0;
     });
     const hardSorted = [...nextBeam].sort((a, b) => {
-      const ad = customRangeDeficit(a.customTotals, customSpecs);
-      const bd = customRangeDeficit(b.customTotals, customSpecs);
-      if (ad !== bd) return ad - bd;
       if (attackSpeedCtx) {
         const ab = attackSpeedBiasValue(attackSpeedCtx, a.atkTierAssigned, remainingMinAtkTier, remainingMaxAtkTier, spdAmp);
         const bb = attackSpeedBiasValue(attackSpeedCtx, b.atkTierAssigned, remainingMinAtkTier, remainingMaxAtkTier, spdAmp);
         if (ab !== bb) return bb - ab;
       }
+      const ad = customRangeDeficit(a.customTotals, customSpecs);
+      const bd = customRangeDeficit(b.customTotals, customSpecs);
+      if (ad !== bd) return ad - bd;
       return b.optimisticBound - a.optimisticBound;
     });
     beam = mergeBeamLanes(primarySorted, hardSorted, Math.max(40, constraints.beamWidth));
@@ -2194,6 +2255,7 @@ export function runAutoBuildBeamSearch(params: {
   }
   baseSlots = mustIncludeAssignment.slots;
   const supportFocusStats = collectRequirementFocusStats(baseSlots, catalog);
+  const attackSpeedCtx = buildAttackSpeedReachabilityContext(baseSlots, catalog, constraints);
 
   const unlockedSlots = ITEM_SLOTS.filter((slot) => baseSlots[slot] == null);
   const pinnedAllowlistBySlot = constraints.onlyPinnedItems ? buildPinnedAllowlistBySlot(baseWorkbench) : null;
@@ -2201,10 +2263,16 @@ export function runAutoBuildBeamSearch(params: {
   for (const slot of unlockedSlots) {
     candidatePools.set(
       slot,
-      buildCandidatePoolForSlot(slot, catalog, constraints, pinnedAllowlistBySlot?.[slot] ?? null, supportFocusStats),
+      buildCandidatePoolForSlot(
+        slot,
+        catalog,
+        constraints,
+        attackSpeedCtx,
+        pinnedAllowlistBySlot?.[slot] ?? null,
+        supportFocusStats,
+      ),
     );
   }
-  const attackSpeedCtx = buildAttackSpeedReachabilityContext(baseSlots, catalog, constraints);
   const atkTierRequirement = buildAtkTierRequirement(getAttackTierRangeSpecs(constraints));
   const fixedAtkTierTotal = computeTotalAtkTier(baseSlots, catalog);
 
@@ -2532,14 +2600,14 @@ export function runAutoBuildBeamSearch(params: {
       return b.roughScore - a.roughScore;
     });
     const hardSorted = [...nextBeam].sort((a, b) => {
-      const ad = customRangeDeficit(a.customTotals, customSpecs2);
-      const bd = customRangeDeficit(b.customTotals, customSpecs2);
-      if (ad !== bd) return ad - bd;
       if (attackSpeedCtx) {
         const ab = attackSpeedBiasValue(attackSpeedCtx, a.atkTierAssigned, remainingMinAtkTier, remainingMaxAtkTier, spdAmp2);
         const bb = attackSpeedBiasValue(attackSpeedCtx, b.atkTierAssigned, remainingMinAtkTier, remainingMaxAtkTier, spdAmp2);
         if (ab !== bb) return bb - ab;
       }
+      const ad = customRangeDeficit(a.customTotals, customSpecs2);
+      const bd = customRangeDeficit(b.customTotals, customSpecs2);
+      if (ad !== bd) return ad - bd;
       return b.optimisticBound - a.optimisticBound;
     });
     beam = mergeBeamLanes(primarySorted, hardSorted, Math.max(20, constraints.beamWidth));

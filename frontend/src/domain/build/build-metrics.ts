@@ -300,7 +300,7 @@ const FLEXIBLE_2_COMBINATIONS: SkillVec[] = [
 
 export function skillpointOptionsFromTomeMode(
   mode: SkillpointTomeMode,
-  level: number,
+  _level: number,
 ): SkillpointFeasibilityOptions {
   switch (mode) {
     case 'guild_rainbow':

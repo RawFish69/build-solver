@@ -393,6 +393,98 @@ describe('autobuilder beam search', () => {
     expect(results[0].slots.helmet).toBe(2);
   });
 
+  it('treats selected final attack speed like a top-priority advanced constraint in Advanced IDs only mode', () => {
+    const distractorHelmets = Array.from({ length: 20 }, (_, index) =>
+      rawItem({
+        id: 900 + index,
+        name: `MR Distractor Helm ${index + 1}`,
+        type: 'helmet',
+        lvl: 100,
+        fixID: true,
+        mr: 30,
+        atkTier: 0,
+      }),
+    );
+    const exactSpeedHelm = rawItem({
+      id: 999,
+      name: 'Exact Speed Helm',
+      type: 'helmet',
+      lvl: 100,
+      fixID: true,
+      mr: 10,
+      atkTier: 1,
+      sdPct: 40,
+    });
+
+    const catalog = makeTestCatalog([
+      ...distractorHelmets,
+      exactSpeedHelm,
+      rawItem({ id: 1001, name: 'Locked Chest', type: 'chestplate', lvl: 100, fixID: true }),
+      rawItem({ id: 1002, name: 'Locked Legs', type: 'leggings', lvl: 100, fixID: true }),
+      rawItem({ id: 1003, name: 'Locked Boots', type: 'boots', lvl: 100, fixID: true }),
+      rawItem({ id: 1004, name: 'Locked Ring 1', type: 'ring', lvl: 100, fixID: true }),
+      rawItem({ id: 1005, name: 'Locked Ring 2', type: 'ring', lvl: 100, fixID: true }),
+      rawItem({ id: 1006, name: 'Locked Bracelet', type: 'bracelet', lvl: 100, fixID: true }),
+      rawItem({ id: 1007, name: 'Locked Necklace', type: 'necklace', lvl: 100, fixID: true }),
+      rawItem({
+        id: 1008,
+        name: 'Very Fast Weapon',
+        type: 'wand',
+        lvl: 100,
+        fixID: true,
+        classReq: 'Mage',
+        atkSpd: 'VERY_FAST',
+        averageDps: 3000,
+      }),
+    ]);
+
+    const base = createInitialWorkbenchSnapshot();
+    base.characterClass = 'Mage';
+    base.level = 106;
+    base.slots.weapon = 1008;
+    base.slots.chestplate = 1001;
+    base.slots.leggings = 1002;
+    base.slots.boots = 1003;
+    base.slots.ring1 = 1004;
+    base.slots.ring2 = 1005;
+    base.slots.bracelet = 1006;
+    base.slots.necklace = 1007;
+
+    const results = runAutoBuildBeamSearch({
+      catalog,
+      baseWorkbench: base,
+      constraints: {
+        ...DEFAULT_AUTO_BUILD_CONSTRAINTS,
+        characterClass: 'Mage' as const,
+        level: 106,
+        topN: 5,
+        topKPerSlot: 12,
+        beamWidth: 1,
+        maxStates: 64,
+        useExhaustiveSmallPool: false,
+        lockedSlots: {
+          weapon: true,
+          chestplate: true,
+          leggings: true,
+          boots: true,
+          ring1: true,
+          ring2: true,
+          bracelet: true,
+          necklace: true,
+        },
+        constraintOnlyMode: true,
+        weaponAttackSpeeds: ['SUPER_FAST'],
+        target: {
+          customNumericRanges: [{ key: 'mr', min: 10 }],
+        },
+      },
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((candidate) => finalAttackSpeed(candidate, catalog) === 'SUPER_FAST')).toBe(true);
+    expect(results[0].slots.helmet).toBe(999);
+  });
+
   it('enforces final weapon attack speed constraint using total atkTier (not just base weapon speed)', () => {
     const speedCatalog = makeTestCatalog([
       rawItem({ id: 1, name: 'Atk Tier Helm', type: 'helmet', lvl: 100, atkTier: 4, hpBonus: 0 }),
