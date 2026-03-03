@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useShallow } from 'zustand/react/shallow';
-import { Hammer, Link2, TreePine } from 'lucide-react';
+import { CirclePlay, Hammer, Link2, TreePine } from 'lucide-react';
 import { applyThemeMode, persistThemeMode, readStoredThemeMode, type ThemeMode } from '@/app/theme-mode';
 import { itemCatalogService } from '@/domain/items/catalog-service';
 import type { CatalogSnapshot, ItemCategoryKey, ItemSlot } from '@/domain/items/types';
@@ -100,6 +100,7 @@ function snapshotFromStore(store: Pick<WorkbenchStore, 'slots' | 'craftedSlots' 
 }
 
 export function App() {
+  const tutorialUrl = 'https://www.youtube.com/watch?v=BGEwpXTIjQo';
   const initialParsedRef = useRef<ReturnType<typeof parseUrlState> | null>(null);
   if (!initialParsedRef.current && typeof window !== 'undefined') {
     initialParsedRef.current = parseUrlState(window.location);
@@ -569,6 +570,20 @@ export function App() {
     setRecipeSolverOpen(true);
   };
 
+  const tutorialButton = (
+    <a
+      className="wb-video-help"
+      href={tutorialUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Watch the how-to video"
+      aria-label="Watch the how-to video"
+    >
+      <CirclePlay size={18} strokeWidth={2.4} />
+      <span>How to Use</span>
+    </a>
+  );
+
   if (catalogError) {
     return (
       <div className="wb-app-shell flex min-h-screen items-center justify-center p-6">
@@ -623,6 +638,8 @@ export function App() {
                 Modular loadout planning studio with legacy builder compatibility.
               </div>
             </div>
+
+            {tutorialButton}
 
             <button
               type="button"
