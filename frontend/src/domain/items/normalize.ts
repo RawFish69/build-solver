@@ -55,26 +55,31 @@ const NUMERIC_INDEX_KEYS = [
 // Rolled ID keys whose values in compress.json are base rolls and should be
 // converted to max-rolls using WynnBuilder's expandItem logic.
 // See hppeng-wynn.github.io/js/build_utils.js (rolledIDs / expandItem).
-const ROLLED_NUMERIC_KEYS: (keyof ItemNumericStats)[] = [
-  'hpBonus',
-  'hprRaw',
-  'hprPct',
-  'mr',
-  'ms',
-  'ls',
-  'sdPct',
-  'sdRaw',
-  'mdPct',
-  'mdRaw',
-  'poison',
-  'spd',
-  'atkTier',
-  'eDamPct',
-  'tDamPct',
-  'wDamPct',
-  'fDamPct',
-  'aDamPct',
-  'damPct',
+const ROLLED_NUMERIC_FIELDS: ReadonlyArray<{ numericKey: keyof ItemNumericStats; indexKey: string }> = [
+  { numericKey: 'hpBonus', indexKey: 'hpBonus' },
+  { numericKey: 'hprRaw', indexKey: 'hprRaw' },
+  { numericKey: 'hprPct', indexKey: 'hprPct' },
+  { numericKey: 'mr', indexKey: 'mr' },
+  { numericKey: 'ms', indexKey: 'ms' },
+  { numericKey: 'ls', indexKey: 'ls' },
+  { numericKey: 'sdPct', indexKey: 'sdPct' },
+  { numericKey: 'sdRaw', indexKey: 'sdRaw' },
+  { numericKey: 'mdPct', indexKey: 'mdPct' },
+  { numericKey: 'mdRaw', indexKey: 'mdRaw' },
+  { numericKey: 'poison', indexKey: 'poison' },
+  { numericKey: 'spd', indexKey: 'spd' },
+  { numericKey: 'atkTier', indexKey: 'atkTier' },
+  { numericKey: 'spStr', indexKey: 'str' },
+  { numericKey: 'spDex', indexKey: 'dex' },
+  { numericKey: 'spInt', indexKey: 'int' },
+  { numericKey: 'spDef', indexKey: 'def' },
+  { numericKey: 'spAgi', indexKey: 'agi' },
+  { numericKey: 'eDamPct', indexKey: 'eDamPct' },
+  { numericKey: 'tDamPct', indexKey: 'tDamPct' },
+  { numericKey: 'wDamPct', indexKey: 'wDamPct' },
+  { numericKey: 'fDamPct', indexKey: 'fDamPct' },
+  { numericKey: 'aDamPct', indexKey: 'aDamPct' },
+  { numericKey: 'damPct', indexKey: 'damPct' },
 ];
 
 function idRoundLikeWynnbuilder(value: number): number {
@@ -236,12 +241,12 @@ export function normalizeItem(raw: Record<string, unknown>): NormalizedItem | nu
   // Convert rolled IDs from base → max-roll, mirroring WynnBuilder's expandItem,
   // unless this item is marked as having fixed rolled IDs.
   if (!fixRolledIds) {
-    for (const key of ROLLED_NUMERIC_KEYS) {
-      const base = numeric[key];
-      const max = maxRollFromBase(key, base);
-      numeric[key] = max;
-      if (Object.prototype.hasOwnProperty.call(numericIndex, key)) {
-        numericIndex[key] = max;
+    for (const { numericKey, indexKey } of ROLLED_NUMERIC_FIELDS) {
+      const base = numeric[numericKey];
+      const max = maxRollFromBase(numericKey, base);
+      numeric[numericKey] = max;
+      if (Object.prototype.hasOwnProperty.call(numericIndex, indexKey)) {
+        numericIndex[indexKey] = max;
       }
     }
   }

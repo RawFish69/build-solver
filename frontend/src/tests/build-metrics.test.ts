@@ -36,13 +36,13 @@ describe('build skillpoint feasibility', () => {
     expect(result.feasible).toBe(true);
   });
 
-  it('Epoch build validation check (proposed by badping))', () => {
+  it('max-rolls rolled skillpoint bonuses but preserves fixed IDs for the reported build pieces', () => {
     const catalog = makeTestCatalog([
       rawItem({
         id: 1,
         name: 'Luminiferous Aether',
         type: 'helmet',
-        lvl: 100,
+        lvl: 92,
         dexReq: 60,
         dex: 10,
       }),
@@ -56,12 +56,13 @@ describe('build skillpoint feasibility', () => {
         agiReq: 40,
         int: -30,
         def: -30,
+        fixID: true,
       }),
       rawItem({
         id: 3,
         name: 'Leictreach Makani',
         type: 'leggings',
-        lvl: 100,
+        lvl: 95,
         dexReq: 60,
         agiReq: 60,
         dex: 12,
@@ -71,7 +72,7 @@ describe('build skillpoint feasibility', () => {
         id: 4,
         name: 'Warchief',
         type: 'boots',
-        lvl: 100,
+        lvl: 98,
         strReq: 80,
         dexReq: 80,
         str: 20,
@@ -81,24 +82,26 @@ describe('build skillpoint feasibility', () => {
         id: 5,
         name: 'Breezehands',
         type: 'ring',
-        lvl: 100,
+        lvl: 85,
         dexReq: 55,
         agiReq: 55,
+        fixID: true,
       }),
       rawItem({
         id: 6,
         name: 'Dasher',
         type: 'ring',
-        lvl: 100,
+        lvl: 85,
         strReq: 30,
         agiReq: 40,
         str: 4,
+        fixID: true,
       }),
       rawItem({
         id: 7,
         name: "Rycar's Bravado",
         type: 'bracelet',
-        lvl: 100,
+        lvl: 58,
         strReq: 20,
         str: 6,
         dex: 2,
@@ -109,19 +112,57 @@ describe('build skillpoint feasibility', () => {
         id: 8,
         name: 'Diamond Static Necklace',
         type: 'necklace',
-        lvl: 100,
+        lvl: 95,
         dexReq: 100,
+        fixID: true,
       }),
       rawItem({
         id: 9,
-        name: 'Test Weapon',
-        type: 'wand',
-        lvl: 100,
-        classReq: 'Mage',
+        name: 'Epoch',
+        type: 'bow',
+        lvl: 102,
+        classReq: 'Archer',
         averageDps: 1000,
-        str: 2,
-        dex: 2,
+        dexReq: 70,
+        agiReq: 70,
       }),
+    ]);
+
+    expect(catalog.itemsById.get(1)?.numeric.spDex).toBe(13);
+    expect(catalog.itemsById.get(3)?.numeric.spDex).toBe(16);
+    expect(catalog.itemsById.get(3)?.numeric.spAgi).toBe(16);
+    expect(catalog.itemsById.get(4)?.numeric.spStr).toBe(26);
+    expect(catalog.itemsById.get(4)?.numeric.spDex).toBe(13);
+    expect(catalog.itemsById.get(7)?.numeric.spStr).toBe(8);
+    expect(catalog.itemsById.get(7)?.numeric.spDex).toBe(3);
+    expect(catalog.itemsById.get(7)?.numeric.spInt).toBe(-6);
+    expect(catalog.itemsById.get(7)?.numeric.spAgi).toBe(3);
+    expect(catalog.itemsById.get(2)?.numeric.spInt).toBe(-30);
+    expect(catalog.itemsById.get(6)?.numeric.spStr).toBe(4);
+  });
+
+  it('marks the reported Epoch bow build as wearable without tome support', () => {
+    const catalog = makeTestCatalog([
+      rawItem({ id: 1, name: 'Luminiferous Aether', type: 'helmet', lvl: 92, dexReq: 60, dex: 10 }),
+      rawItem({
+        id: 2,
+        name: 'Twilight-Gilded Cloak',
+        type: 'chestplate',
+        lvl: 100,
+        strReq: 40,
+        dexReq: 40,
+        agiReq: 40,
+        int: -30,
+        def: -30,
+        fixID: true,
+      }),
+      rawItem({ id: 3, name: 'Leictreach Makani', type: 'leggings', lvl: 95, dexReq: 60, agiReq: 60, dex: 12, agi: 12 }),
+      rawItem({ id: 4, name: 'Warchief', type: 'boots', lvl: 98, strReq: 80, dexReq: 80, str: 20, dex: 10 }),
+      rawItem({ id: 5, name: 'Breezehands', type: 'ring', lvl: 85, dexReq: 55, agiReq: 55, fixID: true }),
+      rawItem({ id: 6, name: 'Dasher', type: 'ring', lvl: 85, strReq: 30, agiReq: 40, str: 4, fixID: true }),
+      rawItem({ id: 7, name: "Rycar's Bravado", type: 'bracelet', lvl: 58, strReq: 20, str: 6, dex: 2, int: -8, agi: 2 }),
+      rawItem({ id: 8, name: 'Diamond Static Necklace', type: 'necklace', lvl: 95, dexReq: 100, fixID: true }),
+      rawItem({ id: 9, name: 'Epoch', type: 'bow', lvl: 102, classReq: 'Archer', dexReq: 70, agiReq: 70, averageDps: 1000 }),
     ]);
 
     const slots = {
@@ -136,36 +177,47 @@ describe('build skillpoint feasibility', () => {
       weapon: 9,
     };
 
-    // Without weapon SP bonuses this build needs 202 assigned (exceeds 200 at level 106).
-    // Weapon str:2 dex:2 brings it under 200. User confirmed build works on Wynnbuilder.
     const summary = evaluateBuild(
-      { slots, level: 106, characterClass: 'Mage' },
+      { slots, level: 106, characterClass: 'Archer' },
       catalog,
     );
     expect(summary.derived.skillpointFeasible).toBe(true);
+    expect(summary.derived.assignedSkillPointsRequired).toBe(188);
   });
 
-  it('Epoch build without weapon bonuses is feasible with guild_rainbow or flexible_2 tome', () => {
+  it('reported Epoch bow build stays feasible across tome modes once rolls are normalized correctly', () => {
     const catalog = makeTestCatalog([
-      rawItem({ id: 1, name: 'Luminiferous Aether', type: 'helmet', lvl: 100, dexReq: 60, dex: 10 }),
-      rawItem({ id: 2, name: 'Twilight-Gilded Cloak', type: 'chestplate', lvl: 100, strReq: 40, dexReq: 40, agiReq: 40, int: -30, def: -30 }),
-      rawItem({ id: 3, name: 'Leictreach Makani', type: 'leggings', lvl: 100, dexReq: 60, agiReq: 60, dex: 12, agi: 12 }),
-      rawItem({ id: 4, name: 'Warchief', type: 'boots', lvl: 100, strReq: 80, dexReq: 80, str: 20, dex: 10 }),
-      rawItem({ id: 5, name: 'Breezehands', type: 'ring', lvl: 100, dexReq: 55, agiReq: 55 }),
-      rawItem({ id: 6, name: 'Dasher', type: 'ring', lvl: 100, strReq: 30, agiReq: 40, str: 4 }),
-      rawItem({ id: 7, name: "Rycar's Bravado", type: 'bracelet', lvl: 100, strReq: 20, str: 6, dex: 2, int: -8, agi: 2 }),
-      rawItem({ id: 8, name: 'Diamond Static Necklace', type: 'necklace', lvl: 100, dexReq: 100 }),
-      rawItem({ id: 9, name: 'Test Weapon', type: 'wand', lvl: 100, classReq: 'Mage', averageDps: 1000 }),
+      rawItem({ id: 1, name: 'Luminiferous Aether', type: 'helmet', lvl: 92, dexReq: 60, dex: 10 }),
+      rawItem({
+        id: 2,
+        name: 'Twilight-Gilded Cloak',
+        type: 'chestplate',
+        lvl: 100,
+        strReq: 40,
+        dexReq: 40,
+        agiReq: 40,
+        int: -30,
+        def: -30,
+        fixID: true,
+      }),
+      rawItem({ id: 3, name: 'Leictreach Makani', type: 'leggings', lvl: 95, dexReq: 60, agiReq: 60, dex: 12, agi: 12 }),
+      rawItem({ id: 4, name: 'Warchief', type: 'boots', lvl: 98, strReq: 80, dexReq: 80, str: 20, dex: 10 }),
+      rawItem({ id: 5, name: 'Breezehands', type: 'ring', lvl: 85, dexReq: 55, agiReq: 55, fixID: true }),
+      rawItem({ id: 6, name: 'Dasher', type: 'ring', lvl: 85, strReq: 30, agiReq: 40, str: 4, fixID: true }),
+      rawItem({ id: 7, name: "Rycar's Bravado", type: 'bracelet', lvl: 58, strReq: 20, str: 6, dex: 2, int: -8, agi: 2 }),
+      rawItem({ id: 8, name: 'Diamond Static Necklace', type: 'necklace', lvl: 95, dexReq: 100, fixID: true }),
+      rawItem({ id: 9, name: 'Epoch', type: 'bow', lvl: 102, classReq: 'Archer', dexReq: 70, agiReq: 70, averageDps: 1000 }),
     ]);
     const slots = { helmet: 1, chestplate: 2, leggings: 3, boots: 4, ring1: 5, ring2: 6, bracelet: 7, necklace: 8, weapon: 9 };
 
-    const noTomes = evaluateBuild({ slots, level: 106, characterClass: 'Mage' }, catalog, { skillpointTomeMode: 'no_tomes' });
-    expect(noTomes.derived.skillpointFeasible).toBe(false);
+    const noTomes = evaluateBuild({ slots, level: 106, characterClass: 'Archer' }, catalog, { skillpointTomeMode: 'no_tomes' });
+    expect(noTomes.derived.skillpointFeasible).toBe(true);
+    expect(noTomes.derived.assignedSkillPointsRequired).toBe(188);
 
-    const guildRainbow = evaluateBuild({ slots, level: 106, characterClass: 'Mage' }, catalog, { skillpointTomeMode: 'guild_rainbow' });
+    const guildRainbow = evaluateBuild({ slots, level: 106, characterClass: 'Archer' }, catalog, { skillpointTomeMode: 'guild_rainbow' });
     expect(guildRainbow.derived.skillpointFeasible).toBe(true);
 
-    const flexible2 = evaluateBuild({ slots, level: 106, characterClass: 'Mage' }, catalog, { skillpointTomeMode: 'flexible_2' });
+    const flexible2 = evaluateBuild({ slots, level: 106, characterClass: 'Archer' }, catalog, { skillpointTomeMode: 'flexible_2' });
     expect(flexible2.derived.skillpointFeasible).toBe(true);
   });
 });
