@@ -59,6 +59,37 @@ ROOT_FILES_TO_SYNC = [
     "skillpoints.csv",
 ]
 
+# Root files that the frontend actually serves at runtime. Vite serves
+# frontend/public/ at the site root, and the recipe solver fetches these by
+# bare name (see frontend/src/domain/recipe-solver/catalog-service.ts), so the
+# repo-root copy alone is not enough — these must be mirrored into public/ or
+# the served data silently goes stale (e.g. recipes capped pre-Fruma).
+PUBLIC_MIRROR_FILES = [
+    "recipes_compress.json",
+    "ingreds_compress.json",
+]
+PUBLIC_DIR = SOLVER_ROOT / "frontend" / "public"
+
+
+def mirror_to_public(dry: bool):
+    """Keep frontend/public/ copies of served data files in sync with root."""
+    print("\n--- Mirroring served files into frontend/public/ ---")
+    mirrored = False
+    for fname in PUBLIC_MIRROR_FILES:
+        src, dst = SOLVER_ROOT / fname, PUBLIC_DIR / fname
+        if not src.exists():
+            continue
+        if not dst.exists() or src.read_bytes() != dst.read_bytes():
+            if dry:
+                print(f"  [dry] would mirror {fname} → frontend/public/")
+            else:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+                print(f"  mirrored {fname} → frontend/public/")
+            mirrored = True
+    if not mirrored:
+        print("  (frontend/public/ already in sync)")
+
 VERSION_FOLDER_FILES = [
     "items.json",
     "ingreds.json",
@@ -274,6 +305,9 @@ def sync_github(dry: bool, token: str | None, bump_version: str | None):
     if not root_changed:
         print("  (all root files up to date)")
 
+    # --- Mirror served files into frontend/public/ ---
+    mirror_to_public(dry)
+
     # --- Code bump ---
     load_item_js = None
     if bump_version:
@@ -352,6 +386,9 @@ def sync_local(wynn: Path, dry: bool, no_pull: bool, bump_version: str | None):
             root_changed = True
     if not root_changed:
         print("  (all root files up to date)")
+
+    # --- Mirror served files into frontend/public/ ---
+    mirror_to_public(dry)
 
     if bump_version:
         print(f"\n--- Bumping code to version {bump_version} ---")
