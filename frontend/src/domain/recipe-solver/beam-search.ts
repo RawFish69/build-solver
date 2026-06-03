@@ -9,6 +9,7 @@ import type {
 } from '@/domain/recipe-solver/types';
 import {
   CRAFTED_ATK_SPEEDS,
+  GROUPED_LEVEL_RANGES,
   NO_INGREDIENT_ID,
   getCraftedCategory,
 } from '@/domain/recipe-solver/types';
@@ -46,13 +47,26 @@ interface DeterministicFallbackResult {
 }
 
 /**
- * Find the recipe matching the given type and level range.
+ * Find all recipes matching the given type and level range.
+ * Supports grouped UI ranges (e.g. '110-120') that map to multiple actual recipe sub-ranges.
  */
-function findRecipe(catalog: RecipeCatalogSnapshot, recipeType: string, levelRange: string): NormalizedRecipe | null {
+function findRecipesForRange(catalog: RecipeCatalogSnapshot, recipeType: string, levelRange: string): NormalizedRecipe[] {
   const candidates = catalog.recipesByType.get(recipeType.toUpperCase());
-  if (!candidates) return null;
-  const name = `${recipeType.charAt(0).toUpperCase()}${recipeType.slice(1).toLowerCase()}-${levelRange}`;
-  return candidates.find((r) => r.name === name) ?? null;
+  if (!candidates) return [];
+
+  function buildName(range: string): string {
+    return `${recipeType.charAt(0).toUpperCase()}${recipeType.slice(1).toLowerCase()}-${range}`;
+  }
+
+  const subRanges = GROUPED_LEVEL_RANGES[levelRange];
+  if (subRanges) {
+    return subRanges
+      .map((range) => candidates.find((r) => r.name === buildName(range)))
+      .filter((r): r is NormalizedRecipe => r != null);
+  }
+
+  const recipe = candidates.find((r) => r.name === buildName(levelRange));
+  return recipe ? [recipe] : [];
 }
 
 function getEligibleIngredients(
@@ -604,23 +618,10 @@ export interface RecipeSolverRunArgs {
 }
 
 /**
- * Run the recipe solver beam search.
+ * Run the beam search for a single resolved recipe.
  */
-export function runRecipeSolverBeamSearch(args: RecipeSolverRunArgs): RecipeSolverCandidate[] {
+function runSingleRecipeBeamSearch(recipe: NormalizedRecipe, args: RecipeSolverRunArgs): RecipeSolverCandidate[] {
   const { catalog, constraints, signal, onProgress, alreadyThresholdRescue = false } = args;
-
-  const recipe = findRecipe(catalog, constraints.recipeType, constraints.levelRange);
-  if (!recipe) {
-    onProgress?.({
-      phase: 'complete',
-      processedStates: 0,
-      beamSize: 0,
-      expandedSlots: 0,
-      totalSlots: TOTAL_SLOTS,
-      detail: `No recipe found for ${constraints.recipeType}-${constraints.levelRange}.`,
-    });
-    return [];
-  }
 
   const category = getCraftedCategory(recipe.type.toLowerCase());
   const mustIncludeSet = new Set(constraints.mustIncludeIngredients);
@@ -836,11 +837,9 @@ export function runRecipeSolverBeamSearch(args: RecipeSolverRunArgs): RecipeSolv
         totalSlots: TOTAL_SLOTS,
         detail: `No candidates satisfied thresholds. Retrying beam with topK=${rescueConstraints.topKPerSlot}, beam=${rescueConstraints.beamWidth}.`,
       });
-      const rescued = runRecipeSolverBeamSearch({
-        catalog,
+      const rescued = runSingleRecipeBeamSearch(recipe, {
+        ...args,
         constraints: rescueConstraints,
-        signal,
-        onProgress,
         alreadyThresholdRescue: true,
       });
       if (rescued.length > 0) return rescued;
@@ -912,4 +911,63 @@ export function runRecipeSolverBeamSearch(args: RecipeSolverRunArgs): RecipeSolv
   });
 
   return deduped;
+}
+
+/**
+ * Run the recipe solver beam search.
+ * Supports grouped level ranges (e.g. '110-120') that run across multiple sub-recipes and merge results.
+ */
+export function runRecipeSolverBeamSearch(args: RecipeSolverRunArgs): RecipeSolverCandidate[] {
+  const { catalog, constraints, signal, onProgress } = args;
+
+  const recipes = findRecipesForRange(catalog, constraints.recipeType, constraints.levelRange);
+  if (recipes.length === 0) {
+    onProgress?.({
+      phase: 'complete',
+      processedStates: 0,
+      beamSize: 0,
+      expandedSlots: 0,
+      totalSlots: TOTAL_SLOTS,
+      detail: `No recipe found for ${constraints.recipeType} ${constraints.levelRange}.`,
+    });
+    return [];
+  }
+
+  if (recipes.length === 1) {
+    return runSingleRecipeBeamSearch(recipes[0], args);
+  }
+
+  // Grouped range (e.g. 110-120): run solver for each sub-recipe and merge top results.
+  const allCandidates: RecipeSolverCandidate[] = [];
+  for (let i = 0; i < recipes.length; i++) {
+    if (signal?.aborted) throw new DOMException('Recipe solver cancelled', 'AbortError');
+    const recipe = recipes[i];
+    const subRange = recipe.name.split('-').slice(1).join('-');
+    onProgress?.({
+      phase: `sub-recipe ${i + 1}/${recipes.length}`,
+      processedStates: 0,
+      beamSize: 0,
+      expandedSlots: 0,
+      totalSlots: TOTAL_SLOTS,
+      detail: `Running solver for level range ${subRange}`,
+    });
+    const subOnProgress = onProgress
+      ? (event: RecipeSolverProgressEvent) =>
+          onProgress({ ...event, phase: `[${subRange}] ${event.phase}` })
+      : undefined;
+    const candidates = runSingleRecipeBeamSearch(recipe, { ...args, onProgress: subOnProgress });
+    allCandidates.push(...candidates);
+  }
+
+  allCandidates.sort((a, b) => b.score - a.score);
+  const merged = allCandidates.slice(0, constraints.topN);
+  onProgress?.({
+    phase: 'complete',
+    processedStates: 0,
+    beamSize: merged.length,
+    expandedSlots: TOTAL_SLOTS,
+    totalSlots: TOTAL_SLOTS,
+    detail: `Found ${merged.length} candidates across ${recipes.length} sub-recipes for ${constraints.levelRange}.`,
+  });
+  return merged;
 }

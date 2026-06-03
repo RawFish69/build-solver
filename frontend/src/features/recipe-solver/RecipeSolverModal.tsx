@@ -30,7 +30,7 @@ const RECIPE_TYPE_TO_SLOT: Record<string, ItemSlot> = {
 };
 
 const PRESET_LABELS: Record<OptimizationPreset, string> = {
-  advancedIds: 'Advanced IDs only',
+  advancedIds: 'Manual ID Thresholds',
   balanced: 'Balanced',
   offense: 'Offense',
   defense: 'Defense',
@@ -149,6 +149,7 @@ export function RecipeSolverModal(props: {
   const abortRef = useRef<AbortController | null>(null);
 
   const isWeapon = getCraftedCategory(recipeType.toLowerCase()) === 'weapon';
+  const hasStatThresholds = thresholds.some((row) => row.min != null || row.max != null);
 
   // Load catalog when modal opens
   useEffect(() => {
@@ -307,7 +308,12 @@ export function RecipeSolverModal(props: {
             {running ? (
               <Button variant="ghost" onClick={cancel}>Cancel</Button>
             ) : null}
-            <Button variant="primary" onClick={run} disabled={!catalog || running}>
+            <Button
+              variant="primary"
+              onClick={run}
+              disabled={!catalog || running || !hasStatThresholds}
+              title={!hasStatThresholds ? 'Add at least one stat threshold first' : undefined}
+            >
               Solve Recipe
             </Button>
           </div>
@@ -428,14 +434,107 @@ export function RecipeSolverModal(props: {
             </div>
           ) : null}
 
-          <div className="wb-card p-3">
-            <div className="mb-3 text-sm font-semibold">Optimization Goal</div>
-            <div className="flex flex-wrap gap-2">
-              {PRESET_ORDER.map(p => (
-                <ChipButton key={p} active={preset === p} onClick={() => setPreset(p)}>
-                  {PRESET_LABELS[p]}
-                </ChipButton>
+          <div className={`wb-card p-3 transition-colors ${!hasStatThresholds ? 'border-amber-400/60 ring-1 ring-amber-400/30' : ''}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-semibold">Required: Stat Thresholds</div>
+              {!hasStatThresholds ? (
+                <span className="rounded bg-amber-400/20 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-200">
+                  Add a threshold to solve
+                </span>
+              ) : null}
+            </div>
+            <div className="grid gap-3">
+              <div className="text-xs text-[var(--wb-muted)]">
+                Set minimum / maximum targets for specific stats on the crafted item.
+              </div>
+              {thresholds.map(row => (
+                <div key={row.id} className="rounded-lg border border-[var(--wb-border-muted)] p-2">
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <FieldLabel>Stat</FieldLabel>
+                      <select
+                        className="wb-select w-full"
+                        value={row.key}
+                        onChange={(e) => setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, key: e.target.value } : r))}
+                      >
+                        {CRAFTABLE_STAT_KEYS.map(key => (
+                          <option key={key} value={key}>{formatStatLabel(key)} ({key})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="min-w-[80px] flex-1">
+                        <FieldLabel>Min</FieldLabel>
+                        <input
+                          className="wb-input w-full"
+                          type="number"
+                          value={row.min ?? ''}
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, min: raw === '' ? null : Number(raw) } : r));
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-[80px] flex-1">
+                        <FieldLabel>Max</FieldLabel>
+                        <input
+                          className="wb-input w-full"
+                          type="number"
+                          value={row.max ?? ''}
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, max: raw === '' ? null : Number(raw) } : r));
+                          }}
+                        />
+                      </div>
+                      <Button variant="ghost" className="shrink-0" onClick={() => setThresholds(prev => prev.filter(r => r.id !== row.id))}>
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ))}
+              {!hasStatThresholds ? (
+                <div className="rounded-lg border border-dashed border-amber-400/40 px-3 py-2 text-xs text-amber-700 dark:text-amber-200">
+                  No thresholds set. Add at least one stat threshold before running the solver.
+                </div>
+              ) : null}
+              <div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setThresholds(prev => [...prev, { id: thresholdSeqRef.current++, key: CRAFTABLE_STAT_KEYS[0], min: null, max: null }])}
+                >
+                  Add Threshold
+                </Button>
+              </div>
+              <div className="mt-2 border-t border-[var(--wb-border-muted)] pt-3">
+                <FieldLabel>Max Skill Points (Req Limit)</FieldLabel>
+                <div className="mt-1 text-[11px] text-[var(--wb-muted)]">
+                  Exclude recipes that exceed any of these. Leave empty for no limit.
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-2">
+                  {(['STR', 'DEX', 'INT', 'DEF', 'AGI'] as const).map((stat, i) => (
+                    <div key={stat}>
+                      <label className="mb-0.5 block text-[11px] text-[var(--wb-muted)]">{stat}</label>
+                      <input
+                        className="wb-input w-full"
+                        type="number"
+                        min={0}
+                        placeholder="—"
+                        value={maxReqs[i] ?? ''}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          setMaxReqs(prev => {
+                            const next = [...prev] as [number | null, number | null, number | null, number | null, number | null];
+                            next[i] = raw === '' ? null : Math.max(0, Number(raw));
+                            return next;
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -464,97 +563,14 @@ export function RecipeSolverModal(props: {
           </div>
 
           <div className="wb-card p-3">
-            <details className="group">
-              <summary className="cursor-pointer text-sm font-semibold">Advanced: Stat Thresholds</summary>
-              <div className="mt-3 grid gap-3">
-                <div className="text-xs text-[var(--wb-muted)]">
-                  Set minimum / maximum targets for specific stats on the crafted item.
-                </div>
-                {thresholds.map(row => (
-                  <div key={row.id} className="rounded-lg border border-[var(--wb-border-muted)] p-2">
-                    <div className="flex flex-col gap-2">
-                      <div>
-                        <FieldLabel>Stat</FieldLabel>
-                        <select
-                          className="wb-select w-full"
-                          value={row.key}
-                          onChange={(e) => setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, key: e.target.value } : r))}
-                        >
-                          {CRAFTABLE_STAT_KEYS.map(key => (
-                            <option key={key} value={key}>{formatStatLabel(key)} ({key})</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex flex-wrap items-end gap-2">
-                        <div className="min-w-[80px] flex-1">
-                          <FieldLabel>Min</FieldLabel>
-                          <input
-                            className="wb-input w-full"
-                            type="number"
-                            value={row.min ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value.trim();
-                              setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, min: raw === '' ? null : Number(raw) } : r));
-                            }}
-                          />
-                        </div>
-                        <div className="min-w-[80px] flex-1">
-                          <FieldLabel>Max</FieldLabel>
-                          <input
-                            className="wb-input w-full"
-                            type="number"
-                            value={row.max ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value.trim();
-                              setThresholds(prev => prev.map(r => r.id === row.id ? { ...r, max: raw === '' ? null : Number(raw) } : r));
-                            }}
-                          />
-                        </div>
-                        <Button variant="ghost" className="shrink-0" onClick={() => setThresholds(prev => prev.filter(r => r.id !== row.id))}>
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setThresholds(prev => [...prev, { id: thresholdSeqRef.current++, key: CRAFTABLE_STAT_KEYS[0], min: null, max: null }])}
-                  >
-                    Add Threshold
-                  </Button>
-                </div>
-                <div className="mt-3 border-t border-[var(--wb-border-muted)] pt-3">
-                  <FieldLabel>Max Skill Points (Req Limit)</FieldLabel>
-                  <div className="mt-1 text-[11px] text-[var(--wb-muted)]">
-                    Exclude recipes that exceed any of these. Leave empty for no limit.
-                  </div>
-                  <div className="mt-2 grid grid-cols-5 gap-2">
-                    {(['STR', 'DEX', 'INT', 'DEF', 'AGI'] as const).map((stat, i) => (
-                      <div key={stat}>
-                        <label className="mb-0.5 block text-[11px] text-[var(--wb-muted)]">{stat}</label>
-                        <input
-                          className="wb-input w-full"
-                          type="number"
-                          min={0}
-                          placeholder="—"
-                          value={maxReqs[i] ?? ''}
-                          onChange={(e) => {
-                            const raw = e.target.value.trim();
-                            setMaxReqs(prev => {
-                              const next = [...prev] as [number | null, number | null, number | null, number | null, number | null];
-                              next[i] = raw === '' ? null : Math.max(0, Number(raw));
-                              return next;
-                            });
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </details>
+            <div className="mb-3 text-sm font-semibold">Optimization Goal</div>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_ORDER.map(p => (
+                <ChipButton key={p} active={preset === p} disabled={p !== 'advancedIds'} onClick={() => setPreset(p)}>
+                  {PRESET_LABELS[p]}
+                </ChipButton>
+              ))}
+            </div>
           </div>
 
           <div className="wb-card p-3">

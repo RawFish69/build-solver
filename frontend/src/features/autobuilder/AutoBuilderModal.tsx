@@ -98,7 +98,7 @@ type CustomIdThresholdRow = {
 };
 
 const OPTIMIZATION_PRESET_LABELS: Record<OptimizationPreset, string> = {
-  constraints: 'Advanced IDs only',
+  constraints: 'Manual ID Thresholds',
   spell: 'Spell Damage',
   melee: 'Melee',
   mobility: 'Mobility',
@@ -909,7 +909,7 @@ export function AutoBuilderModal(props: {
               variant="primary"
               onClick={run}
               disabled={!props.catalog || running || (primaryPreset === 'constraints' && !hasAdvancedIdThresholds)}
-              title={primaryPreset === 'constraints' && !hasAdvancedIdThresholds ? 'Add at least one Advanced ID threshold first' : undefined}
+              title={primaryPreset === 'constraints' && !hasAdvancedIdThresholds ? 'Add at least one Manual ID threshold first' : undefined}
             >
               Generate Candidates
             </Button>
@@ -1134,7 +1134,7 @@ export function AutoBuilderModal(props: {
                 <summary className="cursor-pointer text-sm font-medium text-[var(--wb-accent)]">Advanced: Specific ID Min / Max</summary>
                 <div className="mt-3 grid gap-3">
                   <div className="text-xs text-[var(--wb-muted)]">
-                    Set build-wide min/max totals for any numeric ID (e.g. `mr`, `ms`, `spd`, `reqTotal`, `sdPct`, `poison`, `atkTier`). Any Advanced ID threshold makes Advanced IDs the primary solver objective; non-Constraints goals only affect tie-breakers. The Constraints goal still runs in pure custom-objective mode.
+                    Set build-wide min/max totals for any numeric ID (e.g. `mr`, `ms`, `spd`, `reqTotal`, `sdPct`, `poison`, `atkTier`). Any Manual ID threshold makes Manual ID Thresholds the primary solver objective; non-Constraints goals only affect tie-breakers. The Constraints goal still runs in pure custom-objective mode.
                   </div>
                   {customIdThresholds.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-[var(--wb-border-muted)] px-3 py-2 text-xs text-[var(--wb-muted)]">
@@ -1209,7 +1209,7 @@ export function AutoBuilderModal(props: {
                   </div>
                   {primaryPreset === 'constraints' && !hasAdvancedIdThresholds ? (
                     <div className="mt-1 rounded-lg border border-amber-500/50 bg-amber-500/15 p-2 text-[11px] font-medium text-amber-800 dark:text-amber-100">
-                      You must add at least one Advanced ID threshold (Min or Max) before generating.
+                      You must add at least one Manual ID threshold (Min or Max) before generating.
                       The Constraints goal requires explicit ID targets to optimize against.
                     </div>
                   ) : null}
@@ -1505,14 +1505,14 @@ export function AutoBuilderModal(props: {
                           <div className="rounded-xl border border-amber-500/50 bg-amber-500/15 p-4">
                             <div className="text-sm font-semibold text-amber-700 dark:text-amber-200">Setup Required</div>
                             <div className="mt-1 text-xs text-amber-800/80 dark:text-amber-100/80">
-                              You&apos;re in <b>Advanced IDs only</b> mode. Add at least one Advanced ID threshold (Min or Max) in the left panel before generating.
+                              You&apos;re in <b>Manual ID Thresholds</b> mode. Add at least one Manual ID threshold (Min or Max) in the left panel before generating.
                             </div>
                           </div>
                         ) : (
                           <div className="rounded-xl border border-dashed border-[var(--wb-border)] p-4">
                             <div className="text-sm font-medium text-[var(--wb-text-secondary)]">No candidates yet</div>
                             <div className="mt-1 text-xs text-[var(--wb-muted)]">
-                              Click <b>Generate Candidates</b> above to run the Build Solver. Make sure you have at least one Advanced ID threshold set.
+                              Click <b>Generate Candidates</b> above to run the Build Solver. Make sure you have at least one Manual ID threshold set.
                             </div>
                           </div>
                         )}

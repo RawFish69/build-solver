@@ -90,8 +90,13 @@ export const LEVEL_RANGES = [
   '40-43','43-45','45-47','47-49','50-53','53-55','55-57','57-59',
   '60-63','63-65','65-67','67-69','70-73','73-75','75-77','77-79',
   '80-83','83-85','85-87','87-89','90-93','93-95','95-97','97-99',
-  '100-103','103-105','105-110','110-115','115-120',
+  '100-103','103-105','105-107','107-109','110-120',
 ] as const;
+
+/** Maps UI-level grouped range labels to the actual recipe sub-ranges in the data. */
+export const GROUPED_LEVEL_RANGES: Record<string, string[]> = {
+  '110-120': ['110-113', '113-115', '115-117', '117-119'],
+};
 
 export const CRAFTED_ATK_SPEEDS = ['SLOW', 'NORMAL', 'FAST'] as const;
 export type CraftedAtkSpd = (typeof CRAFTED_ATK_SPEEDS)[number];
