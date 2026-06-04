@@ -687,12 +687,12 @@ a {
   display: flex;
   height: 100%;
   align-items: center;
-  padding: 0 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  padding: 0 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--wb-text-quaternary);
+  color: var(--wb-text-tertiary);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -703,7 +703,7 @@ a {
 
 .wb-nav-tab:hover {
   color: var(--wb-text-secondary);
-  background: var(--wb-accent-muted);
+  background: rgba(255,255,255,0.04);
 }
 
 .wb-nav-tab[data-active="true"] {
@@ -714,6 +714,55 @@ a {
 
 .wb-nav-tab[data-active="true"]:hover {
   background: var(--wb-accent-muted);
+}
+
+/* Per-tab color theming */
+.wb-nav-tab--build {
+  color: rgba(240,160,48,0.6);
+}
+.wb-nav-tab--build:hover {
+  color: var(--wb-accent-hover);
+  background: var(--wb-accent-muted);
+}
+.wb-nav-tab--build[data-active="true"] {
+  color: var(--wb-accent);
+  border-bottom-color: var(--wb-accent);
+  text-shadow: 0 0 12px var(--wb-accent), 0 0 24px rgba(240,160,48,0.35);
+}
+.wb-nav-tab--build[data-active="true"]:hover {
+  background: var(--wb-accent-muted);
+}
+
+.wb-nav-tab--recipe {
+  color: rgba(34,211,238,0.55);
+}
+.wb-nav-tab--recipe:hover {
+  color: #2ee4f0;
+  background: rgba(34,211,238,0.08);
+}
+.wb-nav-tab--recipe[data-active="true"] {
+  color: #22d3ee;
+  border-bottom-color: #22d3ee;
+  text-shadow: 0 0 12px #22d3ee, 0 0 24px rgba(34,211,238,0.35);
+}
+.wb-nav-tab--recipe[data-active="true"]:hover {
+  background: rgba(34,211,238,0.08);
+}
+
+.wb-nav-tab--atree {
+  color: rgba(216,180,254,0.5);
+}
+.wb-nav-tab--atree:hover {
+  color: #c9a8fb;
+  background: rgba(216,180,254,0.08);
+}
+.wb-nav-tab--atree[data-active="true"] {
+  color: #d8b4fe;
+  border-bottom-color: #d8b4fe;
+  text-shadow: 0 0 12px #d8b4fe, 0 0 24px rgba(216,180,254,0.35);
+}
+.wb-nav-tab--atree[data-active="true"]:hover {
+  background: rgba(216,180,254,0.08);
 }
 
 /* ─── Ability tree nodes ─── */

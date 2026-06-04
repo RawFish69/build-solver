@@ -595,7 +595,7 @@ export function App() {
             <button
               type="button"
               onClick={openAutoBuilder}
-              className="wb-nav-tab"
+              className="wb-nav-tab wb-nav-tab--build"
               data-active={autoBuilderOpen ? 'true' : undefined}
             >
               BUILD
@@ -603,7 +603,7 @@ export function App() {
             <button
               type="button"
               onClick={openRecipeSolver}
-              className="wb-nav-tab"
+              className="wb-nav-tab wb-nav-tab--recipe"
               data-active={recipeSolverOpen ? 'true' : undefined}
             >
               RECIPE
@@ -611,7 +611,7 @@ export function App() {
             <button
               type="button"
               onClick={openAbilityTree}
-              className="wb-nav-tab"
+              className="wb-nav-tab wb-nav-tab--atree"
               data-active={abilityTreeOpen ? 'true' : undefined}
             >
               ATREE
