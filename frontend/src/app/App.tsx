@@ -116,7 +116,7 @@ export function App() {
   const [searchClientReady, setSearchClientReady] = useState(false);
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(initialParsed?.mode === 'autobuilder');
   const [abilityTreeOpen, setAbilityTreeOpen] = useState(initialParsed?.mode === 'abilitytree');
-  const [recipeSolverOpen, setRecipeSolverOpen] = useState(false);
+  const [recipeSolverOpen, setRecipeSolverOpen] = useState(initialParsed?.mode === 'recipe-solver');
   const [abilityTreeDataset, setAbilityTreeDataset] = useState<AbilityTreeDataset | null>(null);
   const [abilityTreeLoading, setAbilityTreeLoading] = useState(false);
   const [abilityTreeError, setAbilityTreeError] = useState<string | null>(null);
@@ -310,7 +310,7 @@ export function App() {
     if (writeUrlTimerRef.current) window.clearTimeout(writeUrlTimerRef.current);
     writeUrlTimerRef.current = window.setTimeout(() => {
       try {
-        const mode = autoBuilderOpen ? 'autobuilder' : abilityTreeOpen ? 'abilitytree' : null;
+        const mode = autoBuilderOpen ? 'autobuilder' : abilityTreeOpen ? 'abilitytree' : recipeSolverOpen ? 'recipe-solver' : null;
         writeUrlState({
           search: searchState,
           workbenchSnapshot: snapshot,
@@ -328,7 +328,7 @@ export function App() {
     return () => {
       if (writeUrlTimerRef.current) window.clearTimeout(writeUrlTimerRef.current);
     };
-  }, [searchState, snapshot, autoBuilderOpen, abilityTreeOpen, abilityTreeSelectionsByClass, abilityTreeVersionHint]);
+  }, [searchState, snapshot, autoBuilderOpen, abilityTreeOpen, recipeSolverOpen, abilityTreeSelectionsByClass, abilityTreeVersionHint]);
 
   const summary = useMemo(() => {
     if (!catalog) return null;
@@ -513,7 +513,7 @@ export function App() {
     writeUrlState({
       search: searchState,
       workbenchSnapshot: snapshot,
-      mode: autoBuilderOpen ? 'autobuilder' : abilityTreeOpen ? 'abilitytree' : null,
+      mode: autoBuilderOpen ? 'autobuilder' : abilityTreeOpen ? 'abilitytree' : recipeSolverOpen ? 'recipe-solver' : null,
       abilityTreeState: { version: abilityTreeVersionHint, selectedByClass: abilityTreeSelectionsByClass },
       replace: true,
     });

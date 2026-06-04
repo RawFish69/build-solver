@@ -197,7 +197,7 @@ export const DEFAULT_RECIPE_SOLVER_WEIGHTS: RecipeSolverWeights = {
 
 export const DEFAULT_RECIPE_SOLVER_CONSTRAINTS: RecipeSolverConstraints = {
   recipeType: 'HELMET',
-  levelRange: '103-105',
+  levelRange: '110-120',
   matTiers: null,
   atkSpd: null,
   weights: DEFAULT_RECIPE_SOLVER_WEIGHTS,
