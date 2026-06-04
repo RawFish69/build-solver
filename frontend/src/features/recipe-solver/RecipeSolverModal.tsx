@@ -124,7 +124,7 @@ export function RecipeSolverModal(props: {
   const [catalog, setCatalog] = useState<RecipeCatalogSnapshot | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [recipeType, setRecipeType] = useState<string>('HELMET');
-  const [levelRange, setLevelRange] = useState<string>('103-105');
+  const [levelRange, setLevelRange] = useState<string>(DEFAULT_RECIPE_SOLVER_CONSTRAINTS.levelRange);
   const [matTierMode, setMatTierMode] = useState<'auto' | 'manual'>('auto');
   const [matTier1, setMatTier1] = useState<number>(3);
   const [matTier2, setMatTier2] = useState<number>(3);
