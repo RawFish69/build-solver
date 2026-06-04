@@ -54,6 +54,8 @@ export interface AutoBuildConstraints {
   useExhaustiveSmallPool: boolean;
   exhaustiveStateLimit: number;
   allowRestricted: boolean;
+  minItemLevel: number;
+  maxItemLevel: number;
   /**
    * When true, scoring is purely constraint-satisfaction based: generic EHP/DPS
    * weights are zeroed and only customNumericRanges + feasibility matter.
@@ -139,4 +141,6 @@ export const DEFAULT_AUTO_BUILD_CONSTRAINTS: AutoBuildConstraints = {
   exhaustiveStateLimit: 250000,
   // Allow restricted / untradeable items by default in Build Solver.
   allowRestricted: true,
+  minItemLevel: 1,
+  maxItemLevel: 120,
 };

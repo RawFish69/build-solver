@@ -1071,6 +1071,104 @@ describe('autobuilder beam search', () => {
     ).toBe(true);
   });
 
+  describe('item level range filter', () => {
+    const baseMage = () => {
+      const snap = createInitialWorkbenchSnapshot();
+      snap.characterClass = 'Mage';
+      snap.level = 120;
+      return snap;
+    };
+
+    const makeLevelCatalog = (helms: Parameters<typeof rawItem>[0][]) =>
+      makeTestCatalog([
+        ...helms.map((h) => rawItem(h)),
+        rawItem({ id: 91, name: 'Chest', type: 'chestplate', lvl: 100 }),
+        rawItem({ id: 92, name: 'Legs', type: 'leggings', lvl: 100 }),
+        rawItem({ id: 93, name: 'Boots', type: 'boots', lvl: 100 }),
+        rawItem({ id: 94, name: 'Ring 1', type: 'ring', lvl: 100 }),
+        rawItem({ id: 95, name: 'Ring 2', type: 'ring', lvl: 100 }),
+        rawItem({ id: 96, name: 'Brace', type: 'bracelet', lvl: 100 }),
+        rawItem({ id: 97, name: 'Neck', type: 'necklace', lvl: 100 }),
+        rawItem({ id: 98, name: 'Weapon', type: 'wand', lvl: 100, classReq: 'Mage', averageDps: 1200 }),
+      ]);
+
+    const baseConstraints = {
+      ...DEFAULT_AUTO_BUILD_CONSTRAINTS,
+      characterClass: 'Mage' as const,
+      level: 120,
+      topN: 5,
+      topKPerSlot: 10,
+      beamWidth: 100,
+    };
+
+    it('includes item at exactly minItemLevel boundary', () => {
+      const testCatalog = makeLevelCatalog([
+        { id: 1, name: 'Boundary Helm', type: 'helmet', lvl: 80, hpBonus: 100 },
+        { id: 2, name: 'Below Min Helm', type: 'helmet', lvl: 79, hpBonus: 5000 },
+      ]);
+      const results = runAutoBuildBeamSearch({
+        catalog: testCatalog,
+        baseWorkbench: baseMage(),
+        constraints: { ...baseConstraints, minItemLevel: 80, maxItemLevel: 120 },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((c) => c.slots.helmet === 1)).toBe(true);
+    });
+
+    it('excludes item one below minItemLevel', () => {
+      const testCatalog = makeLevelCatalog([
+        { id: 1, name: 'Only Helm', type: 'helmet', lvl: 79, hpBonus: 5000 },
+      ]);
+      const results = runAutoBuildBeamSearch({
+        catalog: testCatalog,
+        baseWorkbench: baseMage(),
+        constraints: { ...baseConstraints, minItemLevel: 80, maxItemLevel: 120 },
+      });
+      expect(results).toHaveLength(0);
+    });
+
+    it('includes item at exactly maxItemLevel boundary', () => {
+      const testCatalog = makeLevelCatalog([
+        { id: 1, name: 'Boundary Helm', type: 'helmet', lvl: 100, hpBonus: 100 },
+        { id: 2, name: 'Above Max Helm', type: 'helmet', lvl: 101, hpBonus: 5000 },
+      ]);
+      const results = runAutoBuildBeamSearch({
+        catalog: testCatalog,
+        baseWorkbench: baseMage(),
+        constraints: { ...baseConstraints, minItemLevel: 80, maxItemLevel: 100 },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((c) => c.slots.helmet === 1)).toBe(true);
+    });
+
+    it('excludes item one above maxItemLevel', () => {
+      const testCatalog = makeLevelCatalog([
+        { id: 1, name: 'Only Helm', type: 'helmet', lvl: 101, hpBonus: 5000 },
+      ]);
+      const results = runAutoBuildBeamSearch({
+        catalog: testCatalog,
+        baseWorkbench: baseMage(),
+        constraints: { ...baseConstraints, minItemLevel: 80, maxItemLevel: 100 },
+      });
+      expect(results).toHaveLength(0);
+    });
+
+    it('single-level band only includes item at exactly that level', () => {
+      const testCatalog = makeLevelCatalog([
+        { id: 1, name: 'Exact Helm', type: 'helmet', lvl: 100, hpBonus: 100 },
+        { id: 2, name: 'Low Helm', type: 'helmet', lvl: 99, hpBonus: 5000 },
+        { id: 3, name: 'High Helm', type: 'helmet', lvl: 101, hpBonus: 5000 },
+      ]);
+      const results = runAutoBuildBeamSearch({
+        catalog: testCatalog,
+        baseWorkbench: baseMage(),
+        constraints: { ...baseConstraints, minItemLevel: 100, maxItemLevel: 100 },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((c) => c.slots.helmet === 1)).toBe(true);
+    });
+  });
+
   it('fails fast with explicit diagnostics when must-includes conflict', () => {
     const conflictCatalog = makeTestCatalog([
       rawItem({ id: 901, name: 'Helmet One', type: 'helmet', lvl: 100 }),

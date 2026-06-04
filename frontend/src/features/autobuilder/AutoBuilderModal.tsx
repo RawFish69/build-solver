@@ -253,6 +253,8 @@ export function AutoBuilderModal(props: {
   const [skillpointFeasibilityMode, setSkillpointFeasibilityMode] =
     useState<AutoBuildConstraints['skillpointFeasibilityMode']>(DEFAULT_AUTO_BUILD_CONSTRAINTS.skillpointFeasibilityMode);
   const [minPowderSlots, setMinPowderSlots] = useState<number | null>(null);
+  const [minItemLevel, setMinItemLevel] = useState<number | null>(DEFAULT_AUTO_BUILD_CONSTRAINTS.minItemLevel);
+  const [maxItemLevel, setMaxItemLevel] = useState<number | null>(DEFAULT_AUTO_BUILD_CONSTRAINTS.maxItemLevel);
   const [onlyPinnedItems, setOnlyPinnedItems] = useState(false);
 
   const [beamWidth, setBeamWidth] = useState<number>(DEFAULT_AUTO_BUILD_CONSTRAINTS.beamWidth);
@@ -650,6 +652,8 @@ export function AutoBuilderModal(props: {
       attackSpeedConstraintMode,
       skillpointFeasibilityMode,
       minPowderSlots,
+      minItemLevel: Math.max(1, Math.min(120, Math.round(minItemLevel ?? 1))),
+      maxItemLevel: Math.max(1, Math.min(120, Math.round(maxItemLevel ?? 120))),
       onlyPinnedItems,
       useExhaustiveSmallPool,
       exhaustiveStateLimit: Math.max(1000, Math.min(5000000, exhaustiveStateLimit)),
@@ -1280,6 +1284,15 @@ export function AutoBuilderModal(props: {
             <div className="mb-3 text-sm font-semibold">Pool Filters</div>
             <div className="grid gap-3">
               <NumberField label="Min Powder Slots" value={minPowderSlots} onChange={setMinPowderSlots} min={0} max={6} />
+
+              <div>
+                <FieldLabel>Item Level Range</FieldLabel>
+                <div className="flex items-center gap-2">
+                  <NumberField label="Min" value={minItemLevel} onChange={setMinItemLevel} min={1} max={120} />
+                  <span className="text-[var(--wb-muted)]">–</span>
+                  <NumberField label="Max" value={maxItemLevel} onChange={setMaxItemLevel} min={1} max={120} />
+                </div>
+              </div>
 
               <div>
                 <FieldLabel>Allowed Tiers (optional)</FieldLabel>

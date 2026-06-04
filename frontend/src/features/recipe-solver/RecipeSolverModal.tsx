@@ -139,6 +139,8 @@ export function RecipeSolverModal(props: {
   const [topKPerSlot, setTopKPerSlot] = useState(DEFAULT_RECIPE_SOLVER_CONSTRAINTS.topKPerSlot);
   const [topN, setTopN] = useState(DEFAULT_RECIPE_SOLVER_CONSTRAINTS.topN);
   const [maxReqs, setMaxReqs] = useState<[number | null, number | null, number | null, number | null, number | null]>([null, null, null, null, null]);
+  const [minIngredientLevel, setMinIngredientLevel] = useState<number | null>(DEFAULT_RECIPE_SOLVER_CONSTRAINTS.minIngredientLevel);
+  const [maxIngredientLevel, setMaxIngredientLevel] = useState<number | null>(DEFAULT_RECIPE_SOLVER_CONSTRAINTS.maxIngredientLevel);
 
   const [results, setResults] = useState<RecipeSolverCandidate[]>([]);
   const [progress, setProgress] = useState('');
@@ -243,6 +245,8 @@ export function RecipeSolverModal(props: {
       beamWidth: Math.max(20, Math.min(3000, beamWidth)),
       target,
       maxReqs,
+      minIngredientLevel: Math.max(1, Math.min(120, Math.round(minIngredientLevel ?? 1))),
+      maxIngredientLevel: Math.max(1, Math.min(120, Math.round(maxIngredientLevel ?? 120))),
     };
 
     abortRef.current?.abort();
@@ -541,6 +545,15 @@ export function RecipeSolverModal(props: {
           <div className="wb-card p-3">
             <div className="mb-3 text-sm font-semibold">Ingredient Constraints</div>
             <div className="grid gap-3">
+              <div>
+                <FieldLabel>Ingredient Level Range</FieldLabel>
+                <div className="flex items-center gap-2">
+                  <NumberField label="Min" value={minIngredientLevel} onChange={setMinIngredientLevel} min={1} max={120} />
+                  <span className="text-[var(--wb-muted)]">–</span>
+                  <NumberField label="Max" value={maxIngredientLevel} onChange={setMaxIngredientLevel} min={1} max={120} />
+                </div>
+              </div>
+
               <div>
                 <FieldLabel>Must-Include Ingredients (comma-separated)</FieldLabel>
                 <textarea

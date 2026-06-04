@@ -667,6 +667,8 @@ function validateFinalHardConstraints(
 function itemMatchesGlobalConstraints(item: NormalizedItem, constraints: AutoBuildConstraints): boolean {
   if (!constraints.allowRestricted && (item.restricted || item.deprecated)) return false;
   if (item.level > constraints.level) return false;
+  if (item.level < constraints.minItemLevel) return false;
+  if (item.level > constraints.maxItemLevel) return false;
   if (!itemCanBeWornByClass(item, constraints.characterClass)) return false;
   if (constraints.excludedIds.includes(item.id)) return false;
   if (constraints.allowedTiers.length > 0 && !constraints.allowedTiers.includes(item.tier)) return false;

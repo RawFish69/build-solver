@@ -153,6 +153,8 @@ export interface RecipeSolverConstraints {
   target: Record<string, { min?: number; max?: number }>;
   /** Max per-stat requirements. Recipe excluded if any req exceeds its max. Order: [STR, DEX, INT, DEF, AGI]. */
   maxReqs: [number | null, number | null, number | null, number | null, number | null];
+  minIngredientLevel: number;
+  maxIngredientLevel: number;
 }
 
 export interface RecipeSolverScoreBreakdown {
@@ -208,6 +210,8 @@ export const DEFAULT_RECIPE_SOLVER_CONSTRAINTS: RecipeSolverConstraints = {
   beamWidth: 400,
   target: {},
   maxReqs: [null, null, null, null, null],
+  minIngredientLevel: 1,
+  maxIngredientLevel: 120,
 };
 
 export const NO_INGREDIENT_ID = 4000;

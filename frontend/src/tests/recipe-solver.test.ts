@@ -288,6 +288,115 @@ describe('recipe solver threshold handling', () => {
     expect(results.every((candidate) => (candidate.stats.maxRolls.lq ?? 0) >= 12)).toBe(true);
   });
 
+  describe('ingredient level range filter', () => {
+    it('includes ingredient at exactly minIngredientLevel boundary', () => {
+      const ing = { ...makeIngredient(1, 'Boundary Ing', { mr: { min: 10, max: 10 } }), lvl: 80 };
+      const testCatalog = makeCatalog([ing]);
+      const results = runRecipeSolverBeamSearch({
+        catalog: testCatalog,
+        constraints: {
+          ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+          recipeType: 'HELMET',
+          levelRange: '103-105',
+          minIngredientLevel: 80,
+          maxIngredientLevel: 105,
+          topN: 10,
+          topKPerSlot: 20,
+          beamWidth: 100,
+          target: { mr: { min: 10 } },
+        },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((c) => c.ingredientIds.includes(1))).toBe(true);
+    });
+
+    it('excludes ingredient one below minIngredientLevel', () => {
+      const ing = { ...makeIngredient(1, 'Below Min Ing', { mr: { min: 10, max: 10 } }), lvl: 79 };
+      const testCatalog = makeCatalog([ing]);
+      const results = runRecipeSolverBeamSearch({
+        catalog: testCatalog,
+        constraints: {
+          ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+          recipeType: 'HELMET',
+          levelRange: '103-105',
+          minIngredientLevel: 80,
+          maxIngredientLevel: 105,
+          topN: 10,
+          topKPerSlot: 20,
+          beamWidth: 100,
+          target: { mr: { min: 10 } },
+        },
+      });
+      expect(results).toHaveLength(0);
+    });
+
+    it('includes ingredient at exactly maxIngredientLevel boundary', () => {
+      const ing = { ...makeIngredient(1, 'Max Boundary Ing', { mr: { min: 10, max: 10 } }), lvl: 100 };
+      const testCatalog = makeCatalog([ing]);
+      const results = runRecipeSolverBeamSearch({
+        catalog: testCatalog,
+        constraints: {
+          ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+          recipeType: 'HELMET',
+          levelRange: '103-105',
+          minIngredientLevel: 1,
+          maxIngredientLevel: 100,
+          topN: 10,
+          topKPerSlot: 20,
+          beamWidth: 100,
+          target: { mr: { min: 10 } },
+        },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((c) => c.ingredientIds.includes(1))).toBe(true);
+    });
+
+    it('excludes ingredient one above maxIngredientLevel', () => {
+      const ing = { ...makeIngredient(1, 'Above Max Ing', { mr: { min: 10, max: 10 } }), lvl: 101 };
+      const testCatalog = makeCatalog([ing]);
+      const results = runRecipeSolverBeamSearch({
+        catalog: testCatalog,
+        constraints: {
+          ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+          recipeType: 'HELMET',
+          levelRange: '103-105',
+          minIngredientLevel: 1,
+          maxIngredientLevel: 100,
+          topN: 10,
+          topKPerSlot: 20,
+          beamWidth: 100,
+          target: { mr: { min: 10 } },
+        },
+      });
+      expect(results).toHaveLength(0);
+    });
+
+    it('single-level band only includes ingredient at exactly that level', () => {
+      const ing = { ...makeIngredient(1, 'Exact Ing', { mr: { min: 10, max: 10 } }), lvl: 100 };
+      const ingLow = { ...makeIngredient(2, 'Low Ing', { mr: { min: 10, max: 10 } }), lvl: 99 };
+      const ingHigh = { ...makeIngredient(3, 'High Ing', { mr: { min: 10, max: 10 } }), lvl: 101 };
+      const testCatalog = makeCatalog([ing, ingLow, ingHigh]);
+      const results = runRecipeSolverBeamSearch({
+        catalog: testCatalog,
+        constraints: {
+          ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+          recipeType: 'HELMET',
+          levelRange: '103-105',
+          minIngredientLevel: 100,
+          maxIngredientLevel: 100,
+          topN: 10,
+          topKPerSlot: 20,
+          beamWidth: 100,
+          target: { mr: { min: 10 } },
+        },
+      });
+      expect(results.length).toBeGreaterThan(0);
+      expect(
+        results.every((c) => c.ingredientIds.every((id) => id === 1 || id === NO_INGREDIENT_ID)),
+      ).toBe(true);
+    });
+  });
+
   it('reports unsatisfiable threshold detail for impossible lq min', () => {
     const eyesYetOpenId = 10001;
     const catalog = makeCatalogForRecipe('SPEAR', 'WEAPONSMITHING', '103-105', [

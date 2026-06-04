@@ -83,6 +83,8 @@ function getEligibleIngredients(
     if (ing.id === NO_INGREDIENT_ID) continue;
     if (excludedSet.has(ing.id)) continue;
     if (ing.lvl > maxLevel) continue;
+    if (ing.lvl < constraints.minIngredientLevel) continue;
+    if (ing.lvl > constraints.maxIngredientLevel) continue;
     if (!ing.skills.some((s) => s.toUpperCase() === skill)) continue;
     eligible.push(ing);
   }
