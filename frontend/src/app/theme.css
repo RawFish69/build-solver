@@ -4,61 +4,66 @@
 @import "@fontsource/azeret-mono/500.css";
 @import "@fontsource/azeret-mono/600.css";
 @import "@fontsource/azeret-mono/700.css";
+@import "@fontsource-variable/inter";
 
-/* ─── Dark (default) ─── */
+/* ─── Dark (default) — Control Room ───
+   Dark control-room language: near-black canvas, hairline borders, Inter at
+   whisper weight (400), and a rationed Signal Blue accent. Primary CTAs use
+   an off-white "Bone" pill (never the blue). */
 :root {
   color-scheme: dark;
 
-  --font-sans: "Azeret Mono", ui-monospace, monospace;
+  --font-sans: "InterVariable", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "Azeret Mono", ui-monospace, monospace;
+  font-feature-settings: "ss01" 1, "ss03" 1;
 
   /* Canvas & Surfaces */
-  --wb-canvas:         #070a0e;
-  --wb-surface:        #0f1318;
-  --wb-surface-hover:  #141c26;
-  --wb-surface-border: #1e2a3a;
+  --wb-canvas:         #0b0c0e;
+  --wb-surface:        #131416;
+  --wb-surface-hover:  #1a1b1d;
+  --wb-surface-border: rgba(255,255,255,0.07);
 
   /* Layers */
-  --wb-layer-1:       #172030;
-  --wb-layer-1-hover: #1d2a3e;
-  --wb-layer-2:       #0a0d12;
-  --wb-layer-2-hover: #0d1017;
+  --wb-layer-1:       #131416;
+  --wb-layer-1-hover: rgba(255,255,255,0.05);
+  --wb-layer-2:       #1f1f21;
+  --wb-layer-2-hover: #262628;
 
   /* Text */
-  --wb-text:            #e8e8ec;
-  --wb-text-secondary:  #c8d4e0;
-  --wb-text-tertiary:   #6a8090;
-  --wb-text-quaternary: #4a6070;
+  --wb-text:            #ffffff;
+  --wb-text-secondary:  #cececf;
+  --wb-text-tertiary:   #858687;
+  --wb-text-quaternary: #71717a;
 
   /* Borders */
-  --wb-border:        #1e2a3a;
-  --wb-border-strong: #2e3e54;
-  --wb-border-muted:  #131820;
+  --wb-border:        rgba(255,255,255,0.07);
+  --wb-border-strong: rgba(255,255,255,0.14);
+  --wb-border-muted:  rgba(255,255,255,0.05);
 
-  /* Accent (Amber) */
-  --wb-accent:        #f0a030;
-  --wb-accent-hover:  #f5b050;
-  --wb-accent-muted:  rgba(240,160,48,0.08);
-  --wb-accent-border: rgba(240,160,48,0.30);
-  --wb-accent-text:   #f5c870;
+  /* Accent (Signal Blue) */
+  --wb-accent:        #3b82f6;
+  --wb-accent-hover:  #60a5fa;
+  --wb-accent-muted:  rgba(59,130,246,0.10);
+  --wb-accent-border: rgba(59,130,246,0.30);
+  --wb-accent-text:   #60a5fa;
 
-  /* Secondary accent (Blue) */
-  --wb-accent-2:       #60a5fa;
-  --wb-accent-2-muted: rgba(96,165,250,0.10);
+  /* Secondary accent (Ring Blue) */
+  --wb-accent-2:       #93c5fd;
+  --wb-accent-2-muted: rgba(147,197,253,0.10);
 
   /* Semantic */
   --wb-success:        #4ade80;
   --wb-success-muted:  rgba(74,222,128,0.10);
-  --wb-success-border: rgba(74,222,128,0.22);
-  --wb-warn:           #fbbf24;
-  --wb-warn-muted:     rgba(251,191,36,0.10);
-  --wb-warn-border:    rgba(251,191,36,0.22);
+  --wb-success-border: rgba(74,222,128,0.30);
+  --wb-warn:           #ea580c;
+  --wb-warn-muted:     rgba(234,88,12,0.10);
+  --wb-warn-border:    rgba(234,88,12,0.30);
   --wb-danger:         #f87171;
   --wb-danger-muted:   rgba(248,113,113,0.10);
-  --wb-danger-border:  rgba(248,113,113,0.22);
+  --wb-danger-border:  rgba(248,113,113,0.30);
   --wb-info:           #60a5fa;
   --wb-info-muted:     rgba(96,165,250,0.10);
-  --wb-info-border:    rgba(96,165,250,0.22);
+  --wb-info-border:    rgba(96,165,250,0.30);
 
   /* Element colors (game-canonical, same in both themes) */
   --wb-elem-neutral:       #ffaa00;
@@ -89,24 +94,24 @@
   --wb-tier-crafted:   #22d3ee;
 
   /* Buttons */
-  --wb-button-bg:             #0f1318;
-  --wb-button-hover:          #141c26;
-  --wb-button-border:         #1e2a3a;
+  --wb-button-bg:             rgba(255,255,255,0.05);
+  --wb-button-hover:          rgba(255,255,255,0.08);
+  --wb-button-border:         rgba(255,255,255,0.07);
   --wb-button-ghost-hover:    rgba(255,255,255,0.05);
-  --wb-button-primary-bg:     #f0a030;
-  --wb-button-primary-hover:  #f5b050;
-  --wb-button-primary-text:   #0a0c10;
-  --wb-button-primary-border: #c07818;
+  --wb-button-primary-bg:     #f2f2f2;
+  --wb-button-primary-hover:  #e5e5e5;
+  --wb-button-primary-text:   #333333;
+  --wb-button-primary-border: #f2f2f2;
 
   /* Inputs */
-  --wb-input-bg:          #0a0d12;
-  --wb-input-border:      #1e2a3a;
-  --wb-input-placeholder: #4a6070;
+  --wb-input-bg:          #131416;
+  --wb-input-border:      rgba(255,255,255,0.07);
+  --wb-input-placeholder: #71717a;
 
   /* Misc */
-  --wb-shadow:    0 4px 16px rgba(0,0,0,0.4);
-  --wb-shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --wb-overlay:   rgba(0,0,0,0.7);
+  --wb-shadow:    0 1px 4px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
+  --wb-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px rgba(0,0,0,0.05);
+  --wb-overlay:   rgba(0,0,0,0.6);
 
   /* Backward-compat aliases */
   --wb-muted:            var(--wb-text-secondary);
@@ -128,54 +133,71 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Light ─── */
+/* ─── Light — Control Room ───
+   Same frosted-glass control-room language inverted for a light canvas:
+   off-white surfaces, hairline black-alpha borders, Signal Blue accent kept
+   as the one brand accent, and an ink/near-black pill for primary CTAs
+   (the light-mode mirror of the dark theme's off-white "Bone" pill). */
 :root[data-wb-theme="light"] {
   color-scheme: light;
 
-  --wb-canvas:         #c8cdd8;
-  --wb-surface:        #dde2ec;
-  --wb-surface-hover:  #d5dae4;
-  --wb-surface-border: #c0c6d4;
+  --font-sans: "InterVariable", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Azeret Mono", ui-monospace, monospace;
+  font-feature-settings: "ss01" 1, "ss03" 1;
 
-  --wb-layer-1:       #f5f6f9;
-  --wb-layer-1-hover: #eceef4;
-  --wb-layer-2:       #e6eaf2;
-  --wb-layer-2-hover: #dde2ea;
+  /* Canvas & Surfaces */
+  --wb-canvas:         #f2f2f2;
+  --wb-surface:        #ffffff;
+  --wb-surface-hover:  #ececec;
+  --wb-surface-border: rgba(0,0,0,0.08);
 
-  --wb-text:            #0e1014;
-  --wb-text-secondary:  #3a4858;
-  --wb-text-tertiary:   #607084;
-  --wb-text-quaternary: #7888a0;
+  /* Layers */
+  --wb-layer-1:       #ffffff;
+  --wb-layer-1-hover: rgba(0,0,0,0.03);
+  --wb-layer-2:       #ececec;
+  --wb-layer-2-hover: #e2e2e2;
 
-  --wb-border:        #c0c6d4;
-  --wb-border-strong: #a8b0c0;
-  --wb-border-muted:  #cdd2dc;
+  /* Text */
+  --wb-text:            #0e0e10;
+  --wb-text-secondary:  #3f3f42;
+  --wb-text-tertiary:   #71717a;
+  --wb-text-quaternary: #9d9e9f;
 
-  --wb-accent:        #c07818;
-  --wb-accent-hover:  #a86010;
-  --wb-accent-muted:  rgba(192,120,24,0.08);
-  --wb-accent-border: rgba(192,120,24,0.28);
-  --wb-accent-text:   #8a5010;
+  /* Borders */
+  --wb-border:        rgba(0,0,0,0.08);
+  --wb-border-strong: rgba(0,0,0,0.16);
+  --wb-border-muted:  rgba(0,0,0,0.05);
 
-  --wb-accent-2:       #1d6fa8;
-  --wb-accent-2-muted: rgba(29,111,168,0.08);
+  /* Accent (Signal Blue) */
+  --wb-accent:        #3b82f6;
+  --wb-accent-hover:  #2563eb;
+  --wb-accent-muted:  rgba(59,130,246,0.08);
+  --wb-accent-border: rgba(59,130,246,0.30);
+  --wb-accent-text:   #2563eb;
 
+  /* Secondary accent (Ring Blue) */
+  --wb-accent-2:       #60a5fa;
+  --wb-accent-2-muted: rgba(96,165,250,0.10);
+
+  /* Semantic */
   --wb-success:        #16803a;
-  --wb-success-muted:  rgba(22,128,58,0.07);
-  --wb-success-border: rgba(22,128,58,0.22);
-  --wb-warn:           #9a6e10;
-  --wb-warn-muted:     rgba(154,110,16,0.07);
-  --wb-warn-border:    rgba(154,110,16,0.22);
-  --wb-danger:         #c0303a;
-  --wb-danger-muted:   rgba(192,48,58,0.07);
-  --wb-danger-border:  rgba(192,48,58,0.22);
-  --wb-info:           #1d6fa8;
-  --wb-info-muted:     rgba(29,111,168,0.07);
-  --wb-info-border:    rgba(29,111,168,0.22);
+  --wb-success-muted:  rgba(22,128,58,0.08);
+  --wb-success-border: rgba(22,128,58,0.30);
+  --wb-warn:           #c2410c;
+  --wb-warn-muted:     rgba(194,65,12,0.08);
+  --wb-warn-border:    rgba(194,65,12,0.30);
+  --wb-danger:         #dc2626;
+  --wb-danger-muted:   rgba(220,38,38,0.08);
+  --wb-danger-border:  rgba(220,38,38,0.30);
+  --wb-info:           #2563eb;
+  --wb-info-muted:     rgba(37,99,235,0.08);
+  --wb-info-border:    rgba(37,99,235,0.30);
 
+  /* ID polarity */
   --wb-id-positive: #16803a;
-  --wb-id-negative: #c0303a;
+  --wb-id-negative: #dc2626;
 
+  /* Tier colors */
   --wb-tier-mythic:    #7c3aed;
   --wb-tier-fabled:    #e11d48;
   --wb-tier-legendary: #0891b2;
@@ -185,21 +207,24 @@
   --wb-tier-normal:    #6b7280;
   --wb-tier-crafted:   #0891b2;
 
-  --wb-button-bg:             #f5f6f9;
-  --wb-button-hover:          #eceef4;
-  --wb-button-border:         #c0c6d4;
+  /* Buttons */
+  --wb-button-bg:             rgba(0,0,0,0.04);
+  --wb-button-hover:          rgba(0,0,0,0.07);
+  --wb-button-border:         rgba(0,0,0,0.08);
   --wb-button-ghost-hover:    rgba(0,0,0,0.05);
-  --wb-button-primary-bg:     #c07818;
-  --wb-button-primary-hover:  #a86010;
-  --wb-button-primary-text:   #ffffff;
-  --wb-button-primary-border: #a86010;
+  --wb-button-primary-bg:     #18181b;
+  --wb-button-primary-hover:  #27272a;
+  --wb-button-primary-text:   #f5f5f5;
+  --wb-button-primary-border: #18181b;
 
-  --wb-input-bg:          #f5f6f9;
-  --wb-input-border:      #c0c6d4;
-  --wb-input-placeholder: #7888a0;
+  /* Inputs */
+  --wb-input-bg:          #ffffff;
+  --wb-input-border:      rgba(0,0,0,0.1);
+  --wb-input-placeholder: #9d9e9f;
 
-  --wb-shadow:    0 1px 4px rgba(0,0,0,0.08);
-  --wb-shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  /* Misc */
+  --wb-shadow:    0 1px 4px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.06);
+  --wb-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.06), 0 8px 10px rgba(0,0,0,0.04);
   --wb-overlay:   rgba(0,0,0,0.35);
 
   /* Backward-compat aliases */
@@ -214,6 +239,26 @@
   --wb-surface-soft:     var(--wb-layer-1);
   --wb-surface-elevated: var(--wb-layer-1);
   --wb-accent-soft:      var(--wb-accent-muted);
+}
+
+/* ─── shadcn-style token bridge ───
+   Some components (e.g. shadcn/registry components under src/components/ui)
+   are written against shadcn's generic Tailwind tokens (bg-primary,
+   text-foreground, bg-card, border-border, ...). Rather than introducing a
+   second, parallel color system, alias those tokens to the existing --wb-*
+   variables so bg-primary/text-foreground/etc. resolve to this app's real
+   amber/dark-navy palette and keep switching correctly with the light/dark
+   [data-wb-theme] toggle above. */
+@theme inline {
+  --color-background: var(--wb-canvas);
+  --color-foreground: var(--wb-text);
+  --color-card: var(--wb-layer-1);
+  --color-card-foreground: var(--wb-text);
+  --color-primary: var(--wb-accent);
+  --color-primary-foreground: var(--wb-button-primary-text);
+  --color-muted: var(--wb-layer-2);
+  --color-muted-foreground: var(--wb-text-tertiary);
+  --color-border: var(--wb-border);
 }
 
 /* ─── Global reset ─── */
@@ -687,10 +732,10 @@ a {
   display: flex;
   height: 100%;
   align-items: center;
-  padding: 0 1.25rem;
-  font-size: 0.8rem;
+  padding: 0 1.5rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--wb-text-tertiary);
   background: transparent;
@@ -718,23 +763,23 @@ a {
 
 /* Per-tab color theming */
 .wb-nav-tab--build {
-  color: rgba(240,160,48,0.6);
+  color: rgba(240,160,48,0.85);
 }
 .wb-nav-tab--build:hover {
-  color: var(--wb-accent-hover);
-  background: var(--wb-accent-muted);
+  color: #f5b050;
+  background: rgba(240,160,48,0.08);
 }
 .wb-nav-tab--build[data-active="true"] {
-  color: var(--wb-accent);
-  border-bottom-color: var(--wb-accent);
-  text-shadow: 0 0 12px var(--wb-accent), 0 0 24px rgba(240,160,48,0.35);
+  color: #f0a030;
+  border-bottom-color: #f0a030;
+  text-shadow: 0 0 12px #f0a030, 0 0 24px rgba(240,160,48,0.35);
 }
 .wb-nav-tab--build[data-active="true"]:hover {
-  background: var(--wb-accent-muted);
+  background: rgba(240,160,48,0.08);
 }
 
 .wb-nav-tab--recipe {
-  color: rgba(34,211,238,0.55);
+  color: rgba(34,211,238,0.85);
 }
 .wb-nav-tab--recipe:hover {
   color: #2ee4f0;
@@ -750,7 +795,7 @@ a {
 }
 
 .wb-nav-tab--atree {
-  color: rgba(216,180,254,0.5);
+  color: rgba(216,180,254,0.85);
 }
 .wb-nav-tab--atree:hover {
   color: #c9a8fb;

@@ -584,10 +584,12 @@ export function App() {
         {/* ─── TopBar ─── */}
         <header className="flex h-[34px] shrink-0 items-center border-b border-[var(--wb-border)] bg-[var(--wb-surface)] px-2">
           {/* Left: sidebar toggle + diamond logo + wordmark */}
-          <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} side="left" />
-          <div className="ml-1 mr-3 flex shrink-0 items-center gap-1.5">
-            <div style={{ width: 14, height: 14, border: '2px solid var(--wb-accent)', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <span className="hidden text-[0.7rem] font-bold uppercase tracking-[0.12em] sm:block">BUILD SOLVER</span>
+          <div className="flex flex-1 items-center">
+            <SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} side="left" />
+            <div className="ml-1 mr-3 flex shrink-0 items-center gap-1.5">
+              <div style={{ width: 14, height: 14, border: '2px solid var(--wb-accent)', transform: 'rotate(45deg)', flexShrink: 0 }} />
+              <span className="hidden text-[0.7rem] font-bold uppercase tracking-[0.12em] sm:block">BUILD SOLVER</span>
+            </div>
           </div>
 
           {/* Center: tab strip */}
@@ -619,7 +621,7 @@ export function App() {
           </nav>
 
           {/* Right: desktop controls */}
-          <div className="hidden items-center gap-1.5 md:flex">
+          <div className="hidden flex-1 items-center justify-end gap-1.5 md:flex">
             <div className="flex items-center gap-1">
               <label className="text-[11px] text-[var(--wb-text-quaternary)]">Lv.</label>
               <input

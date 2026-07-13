@@ -1,5 +1,5 @@
 """
-Sync data from wynnbuilder-beta into build-solver.
+Sync data from wynnbuilder.github.io into build-solver.
 
 Modes:
   GitHub (default) — fetches directly from GitHub, no local clone needed:
@@ -7,7 +7,7 @@ Modes:
       python sync-from-wynnbuilder.py --dry-run
       python sync-from-wynnbuilder.py --token ghp_xxxx   # avoids 60 req/hr rate limit
 
-  Local clone — uses a local wynnbuilder-beta repo:
+  Local clone — uses a local wynnbuilder.github.io repo:
       python sync-from-wynnbuilder.py --local <path-to-wynnbuilder-repo>
       python sync-from-wynnbuilder.py --local <path> --no-pull
 
@@ -35,28 +35,34 @@ from pathlib import Path
 
 SOLVER_ROOT = Path(__file__).parent
 
-GITHUB_REPO  = "wynnbuilder-beta/wynnbuilder-beta.github.io"
+GITHUB_REPO  = "wynnbuilder/wynnbuilder.github.io"
 GITHUB_BRANCH = "master"
 RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}"
 API_BASE  = f"https://api.github.com/repos/{GITHUB_REPO}"
 
+# (remote_path_in_wynnbuilder_repo, local_path_in_build_solver) — the upstream
+# repo moved these off the repo root into data/baseline/ (hand-edited sources),
+# data/baseline/compressed/ (compressed derivatives), and data/baseline/maps/
+# (persistent id/name mappings); build-solver keeps its own flat root layout,
+# so the two sides no longer share a path and must be mapped explicitly.
+# NOTE: "items_compress.json" (old root file) has no equivalent upstream
+# anymore and isn't read by the frontend — dropped from sync.
 ROOT_FILES_TO_SYNC = [
-    "compress.json",
-    "clean.json",
-    "ingreds_clean.json",
-    "ingreds_compress.json",
-    "recipes_clean.json",
-    "recipes_compress.json",
-    "tomes.json",
-    "tome_map.json",
-    "dps_data.json",
-    "items_compress.json",
-    "recipes.json",
-    "maploc_clean.json",
-    "maploc_compress.json",
-    "terrs_clean.json",
-    "terrs_compress.json",
-    "skillpoints.csv",
+    ("data/baseline/compressed/compress.json", "compress.json"),
+    ("data/baseline/clean.json", "clean.json"),
+    ("data/baseline/ingreds_clean.json", "ingreds_clean.json"),
+    ("data/baseline/compressed/ingreds_compress.json", "ingreds_compress.json"),
+    ("data/baseline/recipes_clean.json", "recipes_clean.json"),
+    ("data/baseline/compressed/recipes_compress.json", "recipes_compress.json"),
+    ("data/baseline/tomes.json", "tomes.json"),
+    ("data/baseline/maps/tome_map.json", "tome_map.json"),
+    ("data/baseline/dps_data.json", "dps_data.json"),
+    ("data/baseline/recipes.json", "recipes.json"),
+    ("data/baseline/maploc_clean.json", "maploc_clean.json"),
+    ("data/baseline/compressed/maploc_compress.json", "maploc_compress.json"),
+    ("data/baseline/terrs_clean.json", "terrs_clean.json"),
+    ("data/baseline/compressed/terrs_compress.json", "terrs_compress.json"),
+    ("skillpoints.csv", "skillpoints.csv"),
 ]
 
 # Root files that the frontend actually serves at runtime. Vite serves
@@ -81,11 +87,11 @@ def mirror_to_public(dry: bool):
             continue
         if not dst.exists() or src.read_bytes() != dst.read_bytes():
             if dry:
-                print(f"  [dry] would mirror {fname} → frontend/public/")
+                print(f"  [dry] would mirror {fname} -> frontend/public/")
             else:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
-                print(f"  mirrored {fname} → frontend/public/")
+                print(f"  mirrored {fname} -> frontend/public/")
             mirrored = True
     if not mirrored:
         print("  (frontend/public/ already in sync)")
@@ -194,10 +200,10 @@ def bump_code(version: str, dry: bool, load_item_js: str | None):
         new_text = re.sub(pattern, lambda m: m.group(1) + version + m.group(2), text)
         if new_text != text:
             if dry:
-                print(f"  [dry] would update version string in {path.name} → '{version}'")
+                print(f"  [dry] would update version string in {path.name} -> '{version}'")
             else:
                 path.write_text(new_text, encoding="utf-8")
-                print(f"  updated {path.name} → '{version}'")
+                print(f"  updated {path.name} -> '{version}'")
             changed = True
 
     encoder = SOLVER_ROOT / "frontend/src/domain/build/build-encoder.ts"
@@ -290,17 +296,18 @@ def sync_github(dry: bool, token: str | None, bump_version: str | None):
     # --- Root files ---
     print("\n--- Root-level files ---")
     root_changed = False
-    for fname in ROOT_FILES_TO_SYNC:
-        remote_sha = remote.get(fname)
+    for remote_path, local_name in ROOT_FILES_TO_SYNC:
+        remote_sha = remote.get(remote_path)
         if remote_sha is None:
+            print(f"  WARNING: {remote_path} not found upstream — skipping {local_name}")
             continue
-        local_path = SOLVER_ROOT / fname
+        local_path = SOLVER_ROOT / local_name
         if local_blob_sha(local_path) != remote_sha:
             if dry:
-                print(f"  [dry] would fetch {fname}")
+                print(f"  [dry] would fetch {remote_path} -> {local_name}")
             else:
-                data = fetch_raw(fname, token)
-                write_file(local_path, data, dry=False, label=fname)
+                data = fetch_raw(remote_path, token)
+                write_file(local_path, data, dry=False, label=local_name)
             root_changed = True
     if not root_changed:
         print("  (all root files up to date)")
@@ -330,7 +337,7 @@ def sync_local(wynn: Path, dry: bool, no_pull: bool, bump_version: str | None):
         sys.exit(f"ERROR: {wynn} doesn't look like a wynnbuilder repo (no data/ folder)")
 
     if not no_pull:
-        print("Pulling wynnbuilder-beta…")
+        print("Pulling wynnbuilder.github.io…")
         result = subprocess.run(["git", "pull"], cwd=wynn, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"  WARNING: git pull failed:\n{result.stderr.strip()}")
@@ -375,14 +382,17 @@ def sync_local(wynn: Path, dry: bool, no_pull: bool, bump_version: str | None):
 
     print("\n--- Root-level files ---")
     root_changed = False
-    for fname in ROOT_FILES_TO_SYNC:
-        src, dst = wynn / fname, SOLVER_ROOT / fname
-        if src.exists() and (not dst.exists() or src.read_bytes() != dst.read_bytes()):
+    for remote_path, local_name in ROOT_FILES_TO_SYNC:
+        src, dst = wynn / remote_path, SOLVER_ROOT / local_name
+        if not src.exists():
+            print(f"  WARNING: {remote_path} not found upstream — skipping {local_name}")
+            continue
+        if not dst.exists() or src.read_bytes() != dst.read_bytes():
             if dry:
-                print(f"  [dry] would copy {fname}")
+                print(f"  [dry] would copy {remote_path} -> {local_name}")
             else:
                 shutil.copy2(src, dst)
-                print(f"  copied {fname}")
+                print(f"  copied {remote_path} -> {local_name}")
             root_changed = True
     if not root_changed:
         print("  (all root files up to date)")
@@ -403,7 +413,7 @@ def sync_local(wynn: Path, dry: bool, no_pull: bool, bump_version: str | None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Sync wynnbuilder-beta data into build-solver.",
+        description="Sync wynnbuilder.github.io data into build-solver.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--local", metavar="PATH", help="use a local clone instead of fetching from GitHub")

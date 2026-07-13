@@ -212,7 +212,7 @@ export function WorkbenchBoard(props: {
   }
 
   return (
-    <div className="flex flex-col gap-2 p-3">
+    <div className="@container flex flex-col gap-2 p-3">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-1.5">
         <div className="flex flex-wrap items-center gap-1">
@@ -244,10 +244,10 @@ export function WorkbenchBoard(props: {
         </div>
       </div>
 
-      {/* Equipment grid: 1 col on mobile, 2 on md, 3 on xl */}
-      <div className="grid gap-1.5 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+      {/* Equipment grid: 1 col by default, 2 cols once the panel itself is wide enough, 3 once it's wider still */}
+      <div className="grid min-w-0 gap-1.5 @lg:grid-cols-2 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
         {slotGroups.map((group, idx) => (
-          <div key={idx} className="grid gap-1.5">
+          <div key={idx} className="grid min-w-0 gap-1.5">
             {group.map((slot) => (
               <SlotCard
                 key={slot}
@@ -260,7 +260,7 @@ export function WorkbenchBoard(props: {
             ))}
           </div>
         ))}
-        <div className="grid content-start gap-1.5">
+        <div className="grid min-w-0 content-start gap-1.5">
           <SlotCard
             slot="weapon"
             catalog={props.catalog}
@@ -297,10 +297,10 @@ export function WorkbenchBoard(props: {
             </div>
             <div
               className={cn(
-                'grid gap-1.5',
+                'grid min-w-0 gap-1.5',
                 section.categories.length === 1 ? 'grid-cols-1'
-                  : section.categories.length === 3 ? 'lg:grid-cols-3'
-                  : 'md:grid-cols-2 xl:grid-cols-4',
+                  : section.categories.length === 3 ? '@3xl:grid-cols-3'
+                  : '@lg:grid-cols-2 @6xl:grid-cols-4',
               )}
             >
               {section.categories.map((category) => (
