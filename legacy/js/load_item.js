@@ -1,4 +1,4 @@
-const ITEM_DB_VERSION = 172;
+const ITEM_DB_VERSION = 197;
 
 let items;
 let sets = new Map();
@@ -10,7 +10,7 @@ let none_items = [];
 
 class ItemLoader extends Loader {
     get remote_paths() {
-        return 'compress';
+        return 'data/baseline/compressed/compress';
     }
 
     get old_data_paths() {
@@ -222,7 +222,16 @@ const wynn_version_names = [
     '2.1.3.4',
     '2.1.4.0',
     '2.1.5.0',
-    '2.1.6.0'
+    '2.1.6.0',
+    '2.2.0.0',
+    '2.2.0.7',
+    '2.2.0.12',
+    '2.2.0.14',
+    '2.2.0.19',
+    '2.2.0.21',
+    '2.2.0.31',
+    '2.2.1.0',
+    '2.2.2.0'
 ];
 
 const WYNN_VERSION_LATEST = wynn_version_names.length - 1;
@@ -242,7 +251,8 @@ let wynn_version_id = WYNN_VERSION_LATEST; // Required for copy url...
 let MAJOR_IDS = null;
 
 async function load_major_id_data(version_str) {
-    let baseUrl = url_base;
+    let getUrl = window.location;
+    let baseUrl = `${getUrl.protocol}//${getUrl.host}/`;
     // No random string -- we want to use caching
     let url = `${baseUrl}/data/${version_str}/majid.json`;
     MAJOR_IDS = await (await fetch(url)).json();
@@ -253,7 +263,8 @@ let ENC = null;
 let DEC = null
 
 async function load_encoding_constants(version_str, decoding_version_str) {
-    let baseUrl = url_base;
+    let getUrl = window.location;
+    let baseUrl = `${getUrl.protocol}//${getUrl.host}/`;
     // No random string -- we want to use caching
     let encoding_url = `${baseUrl}/data/${version_str}/encoding_consts.json`;
     let decoding_url = `${baseUrl}/data/${decoding_version_str}/encoding_consts.json`;

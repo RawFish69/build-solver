@@ -1,16 +1,5 @@
 let getUrl = window.location;
-const url_base = (() => {
-    const fallbackBase = `${getUrl.protocol}//${getUrl.host}`;
-    try {
-        const currentScriptSrc = document.currentScript && document.currentScript.src;
-        if (!currentScriptSrc) {
-            return fallbackBase;
-        }
-        return currentScriptSrc.replace(/\/js\/utils\.js(?:[?#].*)?$/, "");
-    } catch (_err) {
-        return fallbackBase;
-    }
-})();
+const url_base = getUrl.protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1];
 
 // huge regex :doom:
 // replace with navigator.userAgentData.mobile once it has wider support
@@ -1521,3 +1510,5 @@ if (screen.width < 992) {
         scrollPos = document.documentElement.scrollTop;
     });
 }
+
+const ROMAN_NUMERAL_MAP = new Map([[1, "I"], [2, "II"], [3, "III"], [4, "IV"], [5, "V"], [6, "VI"], [7, "VII"]]);

@@ -106,7 +106,7 @@ def stylize_description(strings):
 
 
 if __name__ == "__main__":
-    with open("aspect_map.json", "r") as aspect_ids_file:
+    with open("../data/baseline/maps/aspect_map.json", "r") as aspect_ids_file:
         aspect_ids = json.load(aspect_ids_file)
 
     classes = [
@@ -131,11 +131,11 @@ if __name__ == "__main__":
         ]
     }
 
-    with open("../js/builder/aspects.json", "r") as aspects_data_file:
+    with open("../data/baseline/aspects.json", "r") as aspects_data_file:
         old_aspect_data = json.load(aspects_data_file)
     
     try:
-        with open("api_aspects.json", "r") as old_api_file:
+        with open("../data/temp/api_aspects.json", "r") as old_api_file:
             old_api_data = json.load(old_api_file)
     except FileNotFoundError:
         old_api_data = {c: None for c in classes}
@@ -155,11 +155,11 @@ if __name__ == "__main__":
         old_class_data = old_api_data[wynn_class]
 
         id_map = aspect_ids[wynn_class]
-        for name, aspect in aspect_data.items():
+        for aspect in aspect_data:
             
             old_tier_data = None
-            if name in known_aspect_map:
-                old_tier_data = known_aspect_map[name]['tiers']
+            if aspect['name'] in known_aspect_map:
+                old_tier_data = known_aspect_map[aspect['name']]['tiers']
 
             tier_data = []
             for i in range(len(aspect['tiers'])):
@@ -175,27 +175,35 @@ if __name__ == "__main__":
                     'abilities': abils
                 })
 
-            if name not in id_map:
-                print(f"New aspect: {name}")
+            if aspect['name'] not in id_map:
+                print(f"New aspect: {aspect['name']}")
                 aspect_id = len(id_map)
-                id_map[name] = aspect_id
+                id_map[aspect['name']] = aspect_id
 
             else:
-                aspect_id = id_map[name]
+                aspect_id = id_map[aspect['name']]
+
                 if old_class_data is not None:
-                    if name not in old_class_data:
-                        print(f"Already registered new aspect [{name}]? Likely a bug!")
+                    for old_aspect in old_class_data:
+                        if old_aspect['name'] == aspect['name']:
+                            found_aspect = old_aspect
+                    if not any(found_aspect):
+                        print(f"Already registered new aspect [{aspect['name']}]? Likely a bug!")
                         continue
-                    if json_diff(old_class_data[name], aspect):
-                        aspect_changes[wynn_class].append(name)
+                    if json_diff(found_aspect, aspect):
+                        aspect_changes[wynn_class].append(aspect['name'])
 
             aspect_info = {
-                "displayName": name,
+                "displayName": aspect['name'],
                 "id": aspect_id,
                 "tier": aspect['rarity'][0].upper() + aspect['rarity'][1:],
                 "tiers": tier_data
             }
-            all_output_unordered[wynn_class][name] = aspect_info
+
+            if aspect['name'] in known_aspect_map and 'aliases' in known_aspect_map[aspect['name']]:
+                aspect_info['aliases'] = known_aspect_map[aspect['name']]['aliases']
+
+            all_output_unordered[wynn_class][aspect['name']] = aspect_info
 
     all_output = {c: [] for c in classes}
     for wynn_class in classes:
@@ -220,11 +228,11 @@ if __name__ == "__main__":
             print("No Changes")
         print("---------------------")
 
-    with open("api_aspects.json", "w") as api_file:
+    with open("../data/temp/api_aspects.json", "w") as api_file:
         json.dump(api_data, api_file, indent=2)
 
-    with open("aspects.json", "w") as output_file:
+    with open("../data/temp/aspects.json", "w") as output_file:
         json.dump(all_output, output_file, indent=2)
 
-    with open("aspect_map.json", "w") as aspect_ids_file:
+    with open("../data/baseline/maps/aspect_map.json", "w") as aspect_ids_file:
         json.dump(aspect_ids, aspect_ids_file, indent=2)

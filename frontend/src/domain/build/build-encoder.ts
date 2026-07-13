@@ -134,5 +134,5 @@ export function encodeBuildHash(
  * Build a full WynnBuilder URL for the given hash.
  */
 export function getWynnBuilderBuildUrl(hash: string): string {
-  return `https://wynnbuilder-beta.github.io/builder/#${hash}`;
+  return `https://wynnbuilder.github.io/builder/#${hash}`;
 }

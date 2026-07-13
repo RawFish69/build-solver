@@ -57,7 +57,7 @@ jobs:
           # Legacy Wynnbuilder site (builder, items, css, js, etc.) now lives under legacy/
           # Recreate the original layout at the site root so absolute paths like /css and /thirdparty still work.
           if [ -d "legacy" ]; then
-            for dir in atlas builder crafter custom css ingredients ingredients_adv item items items_adv js map sets thirdparty wynnfo; do
+            for dir in atlas builder crafter custom css ingredient ingredients ingredients_adv item items items_adv js map media sets thirdparty wynnfo; do
               if [ -e "legacy/$dir" ]; then
                 cp -r "legacy/$dir" "_site/$dir"
               else

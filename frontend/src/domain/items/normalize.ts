@@ -54,7 +54,7 @@ const NUMERIC_INDEX_KEYS = [
 
 // Rolled ID keys whose values in compress.json are base rolls and should be
 // converted to max-rolls using WynnBuilder's expandItem logic.
-// See wynnbuilder-beta.github.io/js/build_utils.js (rolledIDs / expandItem).
+// See wynnbuilder.github.io/js/build_utils.js (rolledIDs / expandItem).
 const ROLLED_NUMERIC_FIELDS: ReadonlyArray<{ numericKey: keyof ItemNumericStats; indexKey: string }> = [
   { numericKey: 'hpBonus', indexKey: 'hpBonus' },
   { numericKey: 'hprRaw', indexKey: 'hprRaw' },

@@ -640,8 +640,8 @@ export function RecipeSolverModal(props: {
 
 function getCrafterUrl(hash: string): string {
   const raw = hash.startsWith('CR-') ? hash.slice(3) : hash;
-  // Open in legacy WynnCrafter hosted on wynnbuilder-beta.github.io
-  return `https://wynnbuilder-beta.github.io/crafter/#${raw}`;
+  // Open in WynnCrafter hosted on wynnbuilder.github.io
+  return `https://wynnbuilder.github.io/crafter/#${raw}`;
 }
 
 

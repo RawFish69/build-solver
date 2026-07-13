@@ -33,7 +33,7 @@ export const ELEMENT_CSS_VARS: Record<PowderElement, string> = {
   air: 'var(--wb-elem-air)',
 };
 
-// Stats sourced from wynnbuilder-beta.github.io/js/powders.js (POWDER_TIERS=7)
+// Stats sourced from wynnbuilder.github.io/js/powders.js (POWDER_TIERS=7)
 // Ordering: 7 tiers per element, elements in order: Earth, Thunder, Water, Fire, Air
 const RAW_STATS: Array<{ min: number; max: number; convert: number; defPlus: number; defMinus: number }> = [
   // Earth T1-T7

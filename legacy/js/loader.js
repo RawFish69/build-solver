@@ -52,7 +52,12 @@ class Loader {
             let tsx = this.read_transaction();
             this.process_local(tsx, reject);
             tsx.oncomplete = () => {
-                this.init_maps();
+                try {
+                    this.init_maps();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
                 this.complete = true;
                 this.db.close();
                 resolve();
@@ -92,9 +97,9 @@ class Loader {
      * @returns Promise<JSON | JSON[]>
      */
     static async load_json(paths, cache_mode='default') {
-        const base_url = (typeof url_base === "string" && url_base.length > 0)
-            ? url_base
-            : `${window.location.protocol}//${window.location.host}`;
+        const protocol = window.location.protocol;
+        const host = window.location.host;
+        const base_url = `${protocol}//${host}`
 
         if (typeof paths === "string") {
             let url = `${base_url}/${paths}.json`;
@@ -154,7 +159,30 @@ class Loader {
                     }
                     else {
                         console.log(`Using existing ${this.db_name} data...`)
-                        await this.load_local();
+                        try {
+                            await this.load_local();
+                        } catch (e) {
+                            console.warn(`${this.db_name} appears corrupt, reloading from remote...`, e);
+                            this.db.close();
+                            await new Promise((res, rej) => {
+                                let del = indexedDB.deleteDatabase(this.db_name);
+                                del.onsuccess = res;
+                                del.onerror = () => rej("Failed to delete corrupt DB");
+                            });
+                            let req2 = indexedDB.open(this.db_name, this.db_version);
+                            req2.onupgradeneeded = (event) => {
+                                let db = event.target.result;
+                                for (const store_name of this.store_names) {
+                                    db.createObjectStore(store_name);
+                                }
+                            };
+                            await new Promise((res, rej) => { 
+                                req2.onsuccess = res; 
+                                req2.onerror = () => rej("Failed to reopen DB after corruption");
+                            });
+                            this.db = req2.result;
+                            await this.load();
+                        }
                     }
                 }
                 resolve();

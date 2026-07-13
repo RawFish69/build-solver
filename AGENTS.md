@@ -1,7 +1,7 @@
 # build-solver — Claude context
 
 ## What this project is
-A build-optimization tool for the MMORPG Wynncraft. Frontend is React/TypeScript (Vite). Game data (items, ingredients, ability trees, etc.) is synced from the upstream [wynnbuilder-beta](https://github.com/wynnbuilder-beta/wynnbuilder-beta.github.io) repository.
+A build-optimization tool for the MMORPG Wynncraft. Frontend is React/TypeScript (Vite). Game data (items, ingredients, ability trees, etc.) is synced from the upstream [wynnbuilder](https://github.com/wynnbuilder/wynnbuilder.github.io) repository.
 
 ## Data updates
 
