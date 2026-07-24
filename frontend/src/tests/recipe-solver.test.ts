@@ -3,6 +3,8 @@ import { runRecipeSolverBeamSearch } from '@/domain/recipe-solver/beam-search';
 import {
   DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
   NO_INGREDIENT_ID,
+  RECIPE_TYPE_TO_SKILL,
+  RECIPE_TYPES,
   type NormalizedIngredient,
   type NormalizedRecipe,
   type RecipeCatalogSnapshot,
@@ -429,5 +431,31 @@ describe('recipe solver threshold handling', () => {
     expect(results).toHaveLength(0);
     const final = [...progress].reverse().find((event) => event.phase === 'complete');
     expect(final?.detail ?? '').toContain('Unsatisfiable threshold');
+  });
+});
+
+describe('RECIPE_TYPE_TO_SKILL', () => {
+  // Wynncraft crafting professions. Armouring makes helmets and chestplates;
+  // Tailoring makes leggings and boots. (Regression: chestplate was tailoring.)
+  const EXPECTED: Record<string, string> = {
+    HELMET: 'ARMOURING', CHESTPLATE: 'ARMOURING', LEGGINGS: 'TAILORING', BOOTS: 'TAILORING',
+    SPEAR: 'WEAPONSMITHING', DAGGER: 'WEAPONSMITHING',
+    WAND: 'WOODWORKING', BOW: 'WOODWORKING', RELIK: 'WOODWORKING',
+    RING: 'JEWELING', NECKLACE: 'JEWELING', BRACELET: 'JEWELING',
+    POTION: 'ALCHEMISM', SCROLL: 'SCRIBING', FOOD: 'COOKING',
+  };
+
+  it('chestplate is armouring, not tailoring', () => {
+    expect(RECIPE_TYPE_TO_SKILL.CHESTPLATE).toBe('ARMOURING');
+  });
+
+  it('maps every recipe type to its correct profession', () => {
+    expect(RECIPE_TYPE_TO_SKILL).toEqual(EXPECTED);
+  });
+
+  it('has an entry for every recipe type', () => {
+    for (const type of RECIPE_TYPES) {
+      expect(RECIPE_TYPE_TO_SKILL[type], `missing skill for ${type}`).toBeTruthy();
+    }
   });
 });

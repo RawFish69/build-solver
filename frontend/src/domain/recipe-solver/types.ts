@@ -84,6 +84,19 @@ export const CRAFTING_SKILLS = [
   'JEWELING', 'COOKING', 'ALCHEMISM', 'SCRIBING',
 ] as const;
 
+/**
+ * Maps each crafted recipe type to the profession that makes it. Must match the
+ * `skill` field on the recipe data. Wynncraft split: Armouring makes helmets and
+ * chestplates; Tailoring makes leggings and boots.
+ */
+export const RECIPE_TYPE_TO_SKILL: Record<string, string> = {
+  HELMET: 'ARMOURING', CHESTPLATE: 'ARMOURING', LEGGINGS: 'TAILORING', BOOTS: 'TAILORING',
+  SPEAR: 'WEAPONSMITHING', DAGGER: 'WEAPONSMITHING',
+  WAND: 'WOODWORKING', BOW: 'WOODWORKING', RELIK: 'WOODWORKING',
+  RING: 'JEWELING', NECKLACE: 'JEWELING', BRACELET: 'JEWELING',
+  POTION: 'ALCHEMISM', SCROLL: 'SCRIBING', FOOD: 'COOKING',
+};
+
 export const LEVEL_RANGES = [
   '1-3','3-5','5-7','7-9','10-13','13-15','15-17','17-19',
   '20-23','23-25','25-27','27-29','30-33','33-35','35-37','37-39',

@@ -14,6 +14,7 @@ import {
   DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
   DEFAULT_RECIPE_SOLVER_WEIGHTS,
   getCraftedCategory,
+  RECIPE_TYPE_TO_SKILL,
 } from '@/domain/recipe-solver/types';
 import { RecipeSolverWorkerClient } from '@/domain/recipe-solver/worker';
 import { recipeCatalogService } from '@/domain/recipe-solver/catalog-service';
@@ -104,14 +105,6 @@ function formatStatLabel(key: string): string {
 }
 
 type ThresholdRow = { id: number; key: string; min: number | null; max: number | null };
-
-const RECIPE_TYPE_TO_SKILL: Record<string, string> = {
-  HELMET: 'ARMOURING', CHESTPLATE: 'TAILORING', LEGGINGS: 'TAILORING', BOOTS: 'TAILORING',
-  SPEAR: 'WEAPONSMITHING', DAGGER: 'WEAPONSMITHING',
-  WAND: 'WOODWORKING', BOW: 'WOODWORKING', RELIK: 'WOODWORKING',
-  RING: 'JEWELING', NECKLACE: 'JEWELING', BRACELET: 'JEWELING',
-  POTION: 'ALCHEMISM', SCROLL: 'SCRIBING', FOOD: 'COOKING',
-};
 
 export function RecipeSolverModal(props: {
   open: boolean;
