@@ -101,13 +101,14 @@ export function computeReqPenalty(stats: CraftedItemStats): number {
 
 /**
  * Resolve the effective value for a threshold key.
- * Most keys come from maxRolls, but durability/duration are stored separately.
+ * Most keys come from maxRolls, but durability/duration/charges are stored separately.
  * For range stats (durability, duration) we use the low end for min checks
  * and the high end for max checks, so we return both.
  */
 function resolveThresholdValue(stats: CraftedItemStats, key: string): [number, number] {
   if (key === 'durability') return [stats.durability[0], stats.durability[1]];
   if (key === 'duration') return [stats.duration[0], stats.duration[1]];
+  if (key === 'charges') return [stats.charges, stats.charges];
   const v = stats.maxRolls[key] ?? 0;
   return [v, v];
 }

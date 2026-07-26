@@ -223,6 +223,35 @@ describe('recipe solver threshold handling', () => {
     expect(results.every((candidate) => (candidate.stats.maxRolls.mr ?? 0) >= 40)).toBe(true);
   });
 
+  it('supports charge thresholds for consumable recipes', () => {
+    const chargeCatalog = makeCatalogForRecipe('POTION', 'ALCHEMISM', '103-105', [
+      {
+        ...makeIngredient(3, 'Charge Dust', {}),
+        lvl: 104,
+        skills: ['ALCHEMISM'],
+        consumableIDs: { dura: 0, charges: 1 },
+      },
+    ]);
+
+    const results = runRecipeSolverBeamSearch({
+      catalog: chargeCatalog,
+      constraints: {
+        ...DEFAULT_RECIPE_SOLVER_CONSTRAINTS,
+        recipeType: 'POTION',
+        levelRange: '103-105',
+        topN: 20,
+        topKPerSlot: 20,
+        beamWidth: 160,
+        target: {
+          charges: { min: 8 },
+        },
+      },
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((candidate) => candidate.stats.charges >= 8)).toBe(true);
+  });
+
   it('enforces Eyes Yet Open as must-include with lq min target', () => {
     const eyesYetOpenId = 3;
     const mustIncludeCatalog = makeCatalogForRecipe('SPEAR', 'WEAPONSMITHING', '103-105', [

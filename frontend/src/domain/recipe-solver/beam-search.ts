@@ -94,6 +94,7 @@ function getEligibleIngredients(
 function thresholdValueFromIngredient(ingredient: NormalizedIngredient, key: string): number {
   if (key === 'durability') return ingredient.itemIDs.dura ?? 0;
   if (key === 'duration') return ingredient.consumableIDs.dura ?? 0;
+  if (key === 'charges') return ingredient.consumableIDs.charges ?? 0;
   return ingredient.ids[key]?.max ?? 0;
 }
 
@@ -325,7 +326,7 @@ function precheckThresholdFeasibility(
 
   for (const [key, range] of Object.entries(constraints.target)) {
     if (typeof range.min !== 'number') continue;
-    if (key === 'durability' || key === 'duration') continue;
+    if (key === 'durability' || key === 'duration' || key === 'charges') continue;
 
     let bestAny = 0;
     for (const ing of eligible) {
@@ -431,7 +432,7 @@ function optimisticMinThresholdStillPossible(
 ): boolean {
   for (const [key, range] of Object.entries(constraints.target)) {
     if (typeof range.min !== 'number') continue;
-    if (key === 'durability' || key === 'duration') continue;
+    if (key === 'durability' || key === 'duration' || key === 'charges') continue;
 
     let optimisticCurrent = 0;
     for (const id of partialIds) {
@@ -487,7 +488,7 @@ function runDeterministicThresholdFallback(args: {
   const optimisticBestByKey = new Map<string, number>();
   for (const [key, range] of Object.entries(constraints.target)) {
     if (typeof range.min !== 'number') continue;
-    if (key === 'durability' || key === 'duration') continue;
+    if (key === 'durability' || key === 'duration' || key === 'charges') continue;
     let best = 0;
     for (const ing of pool) {
       const value = Math.max(0, thresholdValueFromIngredient(ing, key));

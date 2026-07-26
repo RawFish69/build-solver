@@ -62,7 +62,7 @@ function presetWeights(preset: OptimizationPreset): RecipeSolverWeights {
 
 /** All IDs that can appear on crafted items (from ingredients + recipe). Used for Stat Thresholds dropdown. */
 const STAT_LABEL: Record<string, string> = {
-  durability: 'Durability', duration: 'Duration',
+  durability: 'Durability', duration: 'Duration', charges: 'Charges',
   sdPct: 'Spell Dmg %', sdRaw: 'Spell Dmg Raw', mdPct: 'Melee Dmg %', mdRaw: 'Melee Dmg Raw',
   damPct: 'Damage %', poison: 'Poison', hpBonus: 'HP Bonus', hprRaw: 'HPR Raw', hprPct: 'HPR %',
   mr: 'Mana Regen', ms: 'Mana Steal', ls: 'Life Steal', spd: 'Walk Speed',
@@ -86,9 +86,9 @@ const STAT_LABEL: Record<string, string> = {
   fDamRaw: 'Fire Dmg Raw', aDamRaw: 'Air Dmg Raw', nDamRaw: 'Neutral Dmg Raw', damRaw: 'Damage Raw', rDamRaw: 'Elem Dmg Raw',
 };
 
-/** Full list of craftable stat IDs (Legacy rolledIDs + skill points + durability/duration). */
+/** Full list of craftable stats (Legacy rolledIDs + skill points + durability/duration/charges). */
 const CRAFTABLE_STAT_KEYS = [
-  'durability', 'duration',
+  'durability', 'duration', 'charges',
   'hprPct', 'mr', 'sdPct', 'mdPct', 'ls', 'ms', 'xpb', 'lb', 'ref', 'thorns', 'expd', 'spd',
   'atkTier', 'poison', 'hpBonus', 'spRegen', 'eSteal', 'hprRaw', 'sdRaw', 'mdRaw',
   'fDamPct', 'wDamPct', 'aDamPct', 'tDamPct', 'eDamPct', 'nDamPct', 'rDamPct', 'damPct',
